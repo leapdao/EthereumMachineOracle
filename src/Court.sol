@@ -2,8 +2,12 @@ pragma solidity >=0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "./Oracle.sol";
+import "./Merkle.sol";
 
 interface ICourt {
+  using Merkle for Merkle.TreeNode;
+  using Merkle for Merkle.Proof;
+  
   enum DisputeState {
     DoesNotExist,
     Opened,
@@ -23,6 +27,17 @@ interface ICourt {
     DisputeState state;
   }
 
+  event NewDispute (
+    bytes32 answerKey,
+    bytes32 prosecutorRoot
+  );
+
+  event Reveal (
+    bytes32 disputeKey,
+    bytes32 defendantRoot,
+    Machine.State finalState
+  );
+
   function oracle()
     external returns (IOracle);
 
@@ -37,23 +52,20 @@ interface ICourt {
 
   function reveal (
     bytes32 disputeKey,
-    bytes32 left,
-    bytes32 right,
-    bytes calldata proofLeft,
-    bytes calldata proofRight,
+    Merkle.TreeNode calldata node,
+    Merkle.Proof calldata proofLeft,
+    Merkle.Proof calldata proofRight,
     Machine.State calldata finalState
   ) external;
 
   function prosecutorRespond (
     bytes32 disputeKey,
-    bytes32 left,
-    bytes32 right
+    Merkle.TreeNode calldata node
   ) external;
 
   function defendantRespond (
     bytes32 disputeKey,
-    bytes32 left,
-    bytes32 right
+    Merkle.TreeNode calldata node
   ) external;
 
   function defendantRevealBottom (
@@ -87,18 +99,49 @@ abstract contract ACourt is ICourt {
   {
     Dispute memory dispute = disputes[prosecutorRoot];
 
-    require(msg.value >= stakeSize, "Not enough stake sent");
+    require(msg.value >= stakeSize, "Not enough stake sent.");
     require(dispute.state == DisputeState.DoesNotExist, "Dispute already exists.");
     require(_answerExists(answerKey), "Answer does not exists.");
-    require(_enoughTimeForDispute(answerKey), "There is not enough time left for a dispute");
+    require(_enoughTimeForDispute(answerKey), "There is not enough time left for a dispute.");
 
     dispute.answerKey = answerKey;
     dispute.state = DisputeState.Opened;
     dispute.prosecutor = msg.sender;
     dispute.lastActionTimestamp = now;
+
+    emit NewDispute(answerKey, prosecutorRoot);
   }
 
-  
+  function reveal (
+    bytes32 disputeKey,
+    Merkle.TreeNode calldata node,
+    Merkle.Proof calldata proofLeft,
+    Merkle.Proof calldata proofRight,
+    Machine.State calldata finalState
+  ) override external
+  {
+    Dispute memory dispute = disputes[disputeKey];
+    IOracle.Answer memory answer = oracle.answers(dispute.answerKey);
+
+    bytes32 defendantRoot = node.hash();
+    (bytes32 leftLeaf, bytes32 leftRoot) = proofLeft.eval();
+    (bytes32 rightLeaf, bytes32 rightRoot) = proofRight.eval();
+
+    require(leftRoot == defendantRoot, "Left proof root does not match claimed root.");
+    require(rightRoot == defendantRoot, "Right proof root does not match claimed root.");
+    require(leftLeaf == answer.questionKey, "Left leaf does not match initial state hash.");
+    require(rightLeaf == Machine.stateHash(finalState), "Right leaf does not match the final state hash.");
+    require(Machine.imageHash(Machine.project(finalState)) == dispute.answerKey, "The revealed final state does not produce the image hash submitted in answer.");
+    require(Machine.isTerminal(finalState), "The revealed final state is not terminal");
+
+    dispute.defendantRoot = defendantRoot;
+    dispute.current = defendantRoot;
+    dispute.lastActionTimestamp = now;
+    dispute.state = DisputeState.ProsecutorTurn;
+
+    emit Reveal(disputeKey, defendantRoot, finalState);
+  }
+    
 
   function _answerExists (
     bytes32 answerKey

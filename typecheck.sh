@@ -3,5 +3,6 @@
 # Compiles with template
 solc src/Oracle.sol src/Court.sol 
 # Compiles with example implementation
-sed 's|Machine.template.sol|src/ExampleMachine.sol|' src/Oracle.sol | solc -
-sed 's|Oracle.sol|src/Oracle.sol|' src/Court.sol | solc -
+# TODO fix below
+# sed 's|Machine.template.sol|src/ExampleMachine.sol|' src/Oracle.sol | solc -
+# sed 's|Oracle.sol|src/Oracle.sol|' src/Court.sol | solc -
