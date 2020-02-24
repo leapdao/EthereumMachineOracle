@@ -20,10 +20,14 @@ interface ICourt {
   struct Dispute {
     bytes32 answerKey;
     bytes32 defendantRoot;
-    bytes32 current;
     address prosecutor;
     uint lastActionTimestamp;
+    uint numberOfSteps;
     uint disagreementPoint;
+    uint depth;
+    bool goRight;
+    Merkle.TreeNode defendantNode;
+    Merkle.TreeNode prosecutorNode;
     DisputeState state;
   }
 
@@ -39,15 +43,15 @@ interface ICourt {
   );
 
   function oracle()
-    external returns (IOracle);
+    external view returns (IOracle);
 
   function getDispute(
     bytes32 disputeKey
-  ) external returns (Dispute memory);
+  ) external view returns (Dispute memory);
 
   function newDispute (
     bytes32 answerKey,
-    bytes32 prosecutorRoot
+    Merkle.TreeNode calldata prosecutorNode
   ) external payable;
 
   function reveal (
@@ -83,23 +87,25 @@ abstract contract ACourt is ICourt {
 
   IOracle public override oracle;
   mapping (bytes32 => Dispute) public disputes;
-  uint public stakeSize;
+  uint public STAKE_SIZE;
+  uint public MAX_TREE_DEPTH;
 
   function getDispute (
     bytes32 disputeKey
-  ) external override returns (Dispute memory)
+  ) external view override returns (Dispute memory)
   {
     return disputes[disputeKey];
   }
     
   function newDispute (
     bytes32 answerKey,
-    bytes32 prosecutorRoot
+    Merkle.TreeNode calldata prosecutorNode
   ) override external payable
   {
+    bytes32 prosecutorRoot = prosecutorNode.hash();
     Dispute memory dispute = disputes[prosecutorRoot];
 
-    require(msg.value >= stakeSize, "Not enough stake sent.");
+    require(msg.value >= STAKE_SIZE, "Not enough stake sent.");
     require(dispute.state == DisputeState.DoesNotExist, "Dispute already exists.");
     require(_answerExists(answerKey), "Answer does not exists.");
     require(_enoughTimeForDispute(answerKey), "There is not enough time left for a dispute.");
@@ -108,6 +114,7 @@ abstract contract ACourt is ICourt {
     dispute.state = DisputeState.Opened;
     dispute.prosecutor = msg.sender;
     dispute.lastActionTimestamp = now;
+    dispute.prosecutorNode = prosecutorNode;
 
     emit NewDispute(answerKey, prosecutorRoot);
   }
@@ -127,6 +134,7 @@ abstract contract ACourt is ICourt {
     (bytes32 leftLeaf, bytes32 leftRoot) = proofLeft.eval();
     (bytes32 rightLeaf, bytes32 rightRoot) = proofRight.eval();
 
+    require(dispute.state == DisputeState.Opened, "Dispute state is not correct for this action.");
     require(leftRoot == defendantRoot, "Left proof root does not match claimed root.");
     require(rightRoot == defendantRoot, "Right proof root does not match claimed root.");
     require(leftLeaf == answer.questionKey, "Left leaf does not match initial state hash.");
@@ -135,20 +143,86 @@ abstract contract ACourt is ICourt {
     require(Machine.isTerminal(finalState), "The revealed final state is not terminal");
 
     dispute.defendantRoot = defendantRoot;
-    dispute.current = defendantRoot;
+    dispute.defendantNode = node;
     dispute.lastActionTimestamp = now;
     dispute.state = DisputeState.ProsecutorTurn;
+    dispute.numberOfSteps = proofRight.index();
+    dispute.goRight = _goRight(dispute.prosecutorNode, dispute.defendantNode);
+    dispute.disagreementPoint = _updateDisagreementPoint(dispute.disagreementPoint, dispute.goRight);
+    dispute.depth = 1;
 
     emit Reveal(disputeKey, defendantRoot, finalState);
+  }
+
+  function prosecutorRespond (
+    bytes32 disputeKey,
+    Merkle.TreeNode calldata node
+  ) override external
+  {
+    Dispute memory dispute = disputes[disputeKey];
+    
+    require(dispute.state == DisputeState.ProsecutorTurn, "Dispute state is not correct for this action.");
+    require(dispute.goRight ? node.hash() == dispute.prosecutorNode.right : node.hash() == dispute.prosecutorNode.left, "Brought node from the wrong side.");
+
+    dispute.prosecutorNode = node;
+    dispute.lastActionTimestamp = now;
+    dispute.state = DisputeState.DefendantTurn;
+
+    // emit something
+  }
+
+  function defendantRespond (
+    bytes32 disputeKey,
+    Merkle.TreeNode calldata node
+  ) override external
+  {
+    Dispute memory dispute = disputes[disputeKey];
+
+    require(dispute.state == DisputeState.DefendantTurn, "Dispute state is not correct for this action.");
+    require(dispute.goRight ? node.hash() == dispute.defendantNode.right : node.hash() == dispute.prosecutorNode.left, "Brought node from the wrong side.");
+
+    dispute.defendantNode = node;
+    dispute.lastActionTimestamp = now;
+    dispute.goRight = _goRight(dispute.prosecutorNode, dispute.defendantNode);
+    dispute.disagreementPoint = _updateDisagreementPoint(dispute.disagreementPoint, dispute.goRight);
+    dispute.depth += 1;
+
+    if (_reachedBottom(dispute.depth)) {
+      if (dispute.disagreementPoint > dispute.numberOfSteps) {
+        delete disputes[disputeKey];
+        payable(oracle.answers(dispute.answerKey).answerer).call.value(STAKE_SIZE)("");
+      } else {
+        dispute.state = DisputeState.Bottom;
+      }
+    } else {
+      dispute.state = DisputeState.ProsecutorTurn;
+    }
   }
     
 
   function _answerExists (
     bytes32 answerKey
-  ) virtual internal returns (bool);
+  ) virtual internal view returns (bool);
 
   function _enoughTimeForDispute (
     bytes32 answerKey
-  ) virtual internal returns (bool);
+  ) virtual internal view returns (bool);
+
+  function _goRight (
+    Merkle.TreeNode memory prosecutorNode,
+    Merkle.TreeNode memory defendantNode
+  ) virtual internal pure returns (bool);
+
+  function _updateDisagreementPoint (
+    uint disagreementPoint,
+    bool goRight
+  ) virtual internal pure returns (uint);
+
+  function _reachedBottom (
+    uint depth
+  ) internal view returns (bool)
+  {
+    return depth == MAX_TREE_DEPTH;
+  }
   
 }

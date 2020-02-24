@@ -29,5 +29,13 @@ library Merkle {
     
   }
 
+  function index (Proof memory self)
+    internal
+    pure
+    returns (uint)
+  {
+
+  }
+
   
 }
