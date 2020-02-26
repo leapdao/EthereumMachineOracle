@@ -132,10 +132,11 @@ abstract contract ACourt is ICourt {
     IOracle.Answer memory answer = oracle.getAnswer(dispute.answerKey);
 
     bytes32 defendantRoot = node.hash();
-    (bytes32 leftLeaf, bytes32 leftRoot,) = proofLeft.eval();
+    (bytes32 leftLeaf, bytes32 leftRoot, uint leftIndex) = proofLeft.eval();
     (bytes32 rightLeaf, bytes32 rightRoot, uint rightIndex) = proofRight.eval();
 
     require(dispute.state == DisputeState.Opened, "Dispute state is not correct for this action.");
+    require(leftIndex == 0, "Left index must be 0.");
     require(leftRoot == defendantRoot, "Left proof root does not match claimed root.");
     require(rightRoot == defendantRoot, "Right proof root does not match claimed root.");
     require(leftLeaf == answer.questionKey, "Left leaf does not match initial state hash.");
