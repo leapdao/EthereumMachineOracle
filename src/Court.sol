@@ -129,7 +129,7 @@ abstract contract ACourt is ICourt {
   ) override external
   {
     Dispute storage dispute = disputes[disputeKey];
-    IOracle.Answer memory answer = oracle.answers(dispute.answerKey);
+    IOracle.Answer memory answer = oracle.getAnswer(dispute.answerKey);
 
     bytes32 defendantRoot = node.hash();
     (bytes32 leftLeaf, bytes32 leftRoot,) = proofLeft.eval();
@@ -242,11 +242,20 @@ abstract contract ACourt is ICourt {
     
   function _answerExists (
     bytes32 answerKey
-  ) virtual internal view returns (bool);
+  ) internal view returns (bool)
+  {
+    IOracle.Answer memory answer = oracle.getAnswer(answerKey);
+    return answer.questionKey > 0;
+  }
 
   function _enoughTimeForDispute (
     bytes32 answerKey
-  ) virtual internal view returns (bool);
+  ) internal view returns (bool)
+  {
+    IOracle.Answer memory answer = oracle.getAnswer(answerKey);
+    IOracle.Question memory question = oracle.getQuestion(answer.questionKey);
+    return now < question.askTime + (2 * question.timeout / 3);
+  }
 
   function _goRight (
     Merkle.TreeNode memory prosecutorNode,
@@ -272,7 +281,7 @@ abstract contract ACourt is ICourt {
     bytes32 disputeKey
   ) internal
   {
-    address payable answerer = payable(oracle.answers(disputes[disputeKey].answerKey).answerer);
+    address payable answerer = payable(oracle.getAnswer(disputes[disputeKey].answerKey).answerer);
     delete disputes[disputeKey];
     answerer.call.value(STAKE_SIZE)("");
   }
