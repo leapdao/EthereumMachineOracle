@@ -69,7 +69,7 @@ interface IOracle {
   function falsify (
     bytes32 answerKey,
     address prosecutor
-  ) external payable;
+  ) external;
 
   function resolveSuccess (
     bytes32 answerKey,

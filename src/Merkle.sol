@@ -24,18 +24,9 @@ library Merkle {
   function eval (Proof memory self)
     internal
     pure
-    returns (bytes32 leaf, bytes32 root)
+    returns (bytes32 leaf, bytes32 root, uint index)
   {
     
   }
-
-  function index (Proof memory self)
-    internal
-    pure
-    returns (uint)
-  {
-
-  }
-
   
 }
