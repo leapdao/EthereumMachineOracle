@@ -1,0 +1,18 @@
+digraph Machine {
+    // splines = "line";
+    seed -> s0[label="create"];
+    s0 -> s1 -> s2 -> s3 -> s4;
+    s4 -> image[label="project"];
+    s0 -> h0 [label="stateHash"];
+    s1 -> h1 [label="stateHash"];
+    s2 -> h2 [label="stateHash"];
+    s3 -> h3 [label="stateHash"];
+    s4 -> h4 [label="stateHash"];
+    image -> hi [label="imageHash"];
+    { rank=same; s0, s1, s2, s3, s4 }
+    { rank=same; h0, h1, h2, h3, h4, hi }
+    { rank=same; seed, image }
+    seed [shape=circle]
+    image [shape=square]
+    h0, h1, h2, h3, h4, hi [shape=rectangle]
+}
