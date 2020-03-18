@@ -24,6 +24,7 @@ library DarkStack {
     assembly {
       mstore(arr, sub(mload(arr), 1))
     }
+    self.size -= 1;
   }
 
   function hash(Stack memory self)

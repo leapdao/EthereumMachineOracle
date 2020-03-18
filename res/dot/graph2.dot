@@ -1,0 +1,10 @@
+digraph Tree {
+    node [shape = box];
+    node0;
+    node1;
+    node2;
+    node0:s -> node1:n;
+    node0:s -> node2:n;
+    
+    
+}

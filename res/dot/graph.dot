@@ -1,0 +1,35 @@
+// digraph Machine {
+//     // splines = "line";
+//     s0 -> s1 -> s2 -> s3 -> s4;
+//     s4 -> image[label="project"];
+//     s0 -> h0 [label="stateHash"];
+//     s1 -> h1 [label="stateHash"];
+//     s2 -> h2 [label="stateHash"];
+//     s3 -> h3 [label="stateHash"];
+//     s4 -> h4 [label="stateHash", weight=8];
+//     seed:ne -> s0:sw[label="create"];
+//     image -> hi [label="imageHash"];
+//     { rank=same; h0, h1, h2, h3, h4, hi }
+//     { rank=same; s0, s1, s2, s3, s4 }
+//     { rank=same; image, seed }
+//     seed [shape=circle]
+//     image [shape=square]
+//     h0, h1, h2, h3, h4, hi [shape=rectangle]
+//     edge[style=invis]
+//     h0:sw -> seed:ne;
+// }
+
+digraph Machine {
+    rankdir=BT;
+    { rank=same; h0, h1, h2, h3, h4 }
+    { rank=same; s0, s1, s2, s3, s4 }
+    { rank=same; seed, image } 
+    s0:n -> h0:s;
+    s1:n -> h1:s;
+    s2:n -> h2:s;
+    s3:n -> h3:s;
+    s4:n -> h4:s;
+    s0 -> s1 -> s2 -> s3 -> s4;
+    seed:ne -> s0:sw;
+    s4:se -> image:nw [constraint=false];
+}
