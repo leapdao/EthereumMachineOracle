@@ -135,6 +135,7 @@ abstract contract ACourt is ICourt {
     (bytes32 leftLeaf, bytes32 leftRoot, uint leftIndex) = proofLeft.eval();
     (bytes32 rightLeaf, bytes32 rightRoot, uint rightIndex) = proofRight.eval();
 
+    require(msg.sender == answer.answerer, "Only whoever submitted the answer can do thereveal");
     require(dispute.state == DisputeState.Opened, "Dispute state is not correct for this action.");
     require(leftIndex == 0, "Left index must be 0.");
     require(leftRoot == defendantRoot, "Left proof root does not match claimed root.");
