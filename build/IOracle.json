@@ -1,0 +1,622 @@
+{
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "questionKey",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "answerKey",
+          "type": "bytes32"
+        }
+      ],
+      "name": "AnswerFalsified",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "questionKey",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "answerKey",
+          "type": "bytes32"
+        }
+      ],
+      "name": "NewAnswer",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "questionKey",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bool",
+              "name": "temp",
+              "type": "bool"
+            }
+          ],
+          "indexed": false,
+          "internalType": "struct Machine.Seed",
+          "name": "seed",
+          "type": "tuple"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "asker",
+          "type": "address"
+        }
+      ],
+      "name": "NewQuestion",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "questionKey",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bool",
+              "name": "temp",
+              "type": "bool"
+            }
+          ],
+          "indexed": false,
+          "internalType": "struct Machine.Image",
+          "name": "image",
+          "type": "tuple"
+        }
+      ],
+      "name": "QuestionResolvedSuccessfully",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "questionKey",
+          "type": "bytes32"
+        }
+      ],
+      "name": "QuestionResolvedUnsuccessfully",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "questionKey",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "imageHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "answer",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bool",
+              "name": "temp",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct Machine.Seed",
+          "name": "seed",
+          "type": "tuple"
+        },
+        {
+          "internalType": "uint256",
+          "name": "timeout",
+          "type": "uint256"
+        },
+        {
+          "internalType": "function (bytes32,struct Machine.Image) external",
+          "name": "successCallback",
+          "type": "function"
+        },
+        {
+          "internalType": "function (bytes32) external",
+          "name": "failCallback",
+          "type": "function"
+        }
+      ],
+      "name": "ask",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "answerKey",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "prosecutor",
+          "type": "address"
+        }
+      ],
+      "name": "falsify",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "answerKey",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getAnswer",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "answerer",
+              "type": "address"
+            },
+            {
+              "internalType": "bool",
+              "name": "falsified",
+              "type": "bool"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "questionKey",
+              "type": "bytes32"
+            }
+          ],
+          "internalType": "struct IOracle.Answer",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "questionKey",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getQuestion",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "askTime",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "timeout",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes32[]",
+              "name": "answerKeys",
+              "type": "bytes32[]"
+            },
+            {
+              "internalType": "function (bytes32,struct Machine.Image) external",
+              "name": "successCallback",
+              "type": "function"
+            },
+            {
+              "internalType": "function (bytes32) external",
+              "name": "failCallback",
+              "type": "function"
+            }
+          ],
+          "internalType": "struct IOracle.Question",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "questionKey",
+          "type": "bytes32"
+        }
+      ],
+      "name": "resolveFail",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "answerKey",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bool",
+              "name": "temp",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct Machine.Image",
+          "name": "image",
+          "type": "tuple"
+        }
+      ],
+      "name": "resolveSuccess",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "evm": {
+    "bytecode": {
+      "linkReferences": {},
+      "object": "",
+      "opcodes": "",
+      "sourceMap": ""
+    },
+    "deployedBytecode": {
+      "immutableReferences": {},
+      "linkReferences": {},
+      "object": "",
+      "opcodes": "",
+      "sourceMap": ""
+    }
+  },
+  "interface": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "questionKey",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "answerKey",
+          "type": "bytes32"
+        }
+      ],
+      "name": "AnswerFalsified",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "questionKey",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "answerKey",
+          "type": "bytes32"
+        }
+      ],
+      "name": "NewAnswer",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "questionKey",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bool",
+              "name": "temp",
+              "type": "bool"
+            }
+          ],
+          "indexed": false,
+          "internalType": "struct Machine.Seed",
+          "name": "seed",
+          "type": "tuple"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "asker",
+          "type": "address"
+        }
+      ],
+      "name": "NewQuestion",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "questionKey",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bool",
+              "name": "temp",
+              "type": "bool"
+            }
+          ],
+          "indexed": false,
+          "internalType": "struct Machine.Image",
+          "name": "image",
+          "type": "tuple"
+        }
+      ],
+      "name": "QuestionResolvedSuccessfully",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "questionKey",
+          "type": "bytes32"
+        }
+      ],
+      "name": "QuestionResolvedUnsuccessfully",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "questionKey",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "imageHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "answer",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bool",
+              "name": "temp",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct Machine.Seed",
+          "name": "seed",
+          "type": "tuple"
+        },
+        {
+          "internalType": "uint256",
+          "name": "timeout",
+          "type": "uint256"
+        },
+        {
+          "internalType": "function (bytes32,struct Machine.Image) external",
+          "name": "successCallback",
+          "type": "function"
+        },
+        {
+          "internalType": "function (bytes32) external",
+          "name": "failCallback",
+          "type": "function"
+        }
+      ],
+      "name": "ask",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "answerKey",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "prosecutor",
+          "type": "address"
+        }
+      ],
+      "name": "falsify",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "answerKey",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getAnswer",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "answerer",
+              "type": "address"
+            },
+            {
+              "internalType": "bool",
+              "name": "falsified",
+              "type": "bool"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "questionKey",
+              "type": "bytes32"
+            }
+          ],
+          "internalType": "struct IOracle.Answer",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "questionKey",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getQuestion",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "askTime",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "timeout",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes32[]",
+              "name": "answerKeys",
+              "type": "bytes32[]"
+            },
+            {
+              "internalType": "function (bytes32,struct Machine.Image) external",
+              "name": "successCallback",
+              "type": "function"
+            },
+            {
+              "internalType": "function (bytes32) external",
+              "name": "failCallback",
+              "type": "function"
+            }
+          ],
+          "internalType": "struct IOracle.Question",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "questionKey",
+          "type": "bytes32"
+        }
+      ],
+      "name": "resolveFail",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "answerKey",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bool",
+              "name": "temp",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct Machine.Image",
+          "name": "image",
+          "type": "tuple"
+        }
+      ],
+      "name": "resolveSuccess",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": ""
+}

@@ -1,0 +1,71 @@
+* EMO Roadmap
+** We have ~20k left
+** What will be the final delivery?
+** EF said they want to see a blog post explaining what we did.
+** We want to make something useful, so we should limit scope
+** My idea is:
+*** Target audience: developers
+Basically a framework to "Truebitize" some machine
+** A lot of smart contract code is already done
+** I think we should not focus too much on fancy machines
+** Let's have 2 example machine ready -> adder machine + something fancier
+** How I imagine the developer experience (this can be written in the blog post):
+*** We assume the developer knows how to express their system in the machine interface
+*** I conform my system to the Machine interface
+*** I run some command to check my Machine implementation
+npm run verifyMachine MyMachine.sol
+Output:
+- If all tests pass, just says: You can use this Machine with EMO
+- If any tests fail, tries to help locate mistake
+*** If all OK, then I run another command
+npm run deployEMOWithMachine MyMachine.sol --config myConfig.json
+What it does:
+- Deploys the Machine as a library on some network
+- Link the library to the EMO stack
+- Deploy EMO stack
+*** We also want some javascript sdk to interact with your EMO
+let emo = new EMO("myMachine.abi");
+emo.answer(...)
+*** THE MAYBIES:
+**** Some frontend that basically wraps the sdk - THIS IS GREAT FOR d
+**** Agent testing framework
+- Specify strtaegies for network participants
+- Demonstrate that certain (byzantine) strategies are not profitable
+**** Explore OVM synergy
+**** Use the solEVM in solEVM-enforcer to create Machine
+OR find some other EVM in Solidity implementation and use that
+Becasue all the ROllup guys are doing this
+** What do we have to do?
+*** Finish the EMO stack with proper testing
+*** Finish the Machine verifier
+*** Finish the deployment script/setup
+*** Finish the SDK
+*** Provide 2 example Machines and make sure they work
+*** Documentation
+**** Techincal - continue from EMO explainer
+**** User-facing - for developers
+**** Blogpost - for clout
+*** The maybies - front end?
+** The verifier script will also have to check syntacitic stuff
+Basically that your names of structs and functions are OK
+** How do we run Machine offchain if we only have Solidity impl?
+*** Well create another tool that launches a local ethreum chain
+*** Deploys just the Machine
+*** And runs the actualy computation locally with infinite gas
+*** let offChainrunner = new OffChainRunner("MyMachine.sol")
+* Tracks
+** EMO core (Oracle + Court) track
+*** Smart contract implementation
+*** Smart contract testing
+*** Deployment script
+** Machine track
+*** Verification tool (properties + syntax)
+*** Another example machine
+*** Off-chain runner
+** Merge track
+*** SDK 
+*** Front-end
+** Documentation track
+*** Techincal - continue from EMO explainer
+*** User-facing - for developers
+*** Blogpost - for clout

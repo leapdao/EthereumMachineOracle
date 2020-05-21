@@ -84,7 +84,7 @@ interface ICourt {
   ) external;
 }
 
-abstract contract ACourt is ICourt {
+contract Court is ICourt {
 
   IOracle public override oracle;
   mapping (bytes32 => Dispute) public disputes;
@@ -267,10 +267,14 @@ abstract contract ACourt is ICourt {
     return prosecutorNode.left == defendantNode.left;
   }
 
+  // TODO
   function _updateDisagreementPoint (
     uint disagreementPoint,
     bool goRight
-  ) virtual internal pure returns (uint);
+  ) internal pure returns (uint)
+  {
+    return 0;
+  }
 
   function _reachedBottom (
     uint depth
@@ -299,9 +303,13 @@ abstract contract ACourt is ICourt {
     prosecutor.call.value(STAKE_SIZE)("");
   }
 
+  // TDOD
   function _canTimeout (
     bytes32 disputeKey
-  ) virtual internal view returns (bool);
+  ) internal view returns (bool)
+  {
+    return true;
+  }
 
   function _defendantWinsOnTimeout (
     bytes32 disputeKey

@@ -1,0 +1,772 @@
+{
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "answerKey",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "prosecutorRoot",
+          "type": "bytes32"
+        }
+      ],
+      "name": "NewDispute",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "disputeKey",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "defendantRoot",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bool",
+              "name": "temp",
+              "type": "bool"
+            }
+          ],
+          "indexed": false,
+          "internalType": "struct Machine.State",
+          "name": "finalState",
+          "type": "tuple"
+        }
+      ],
+      "name": "Reveal",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "disputeKey",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "left",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "right",
+              "type": "bytes32"
+            }
+          ],
+          "internalType": "struct Merkle.TreeNode",
+          "name": "node",
+          "type": "tuple"
+        }
+      ],
+      "name": "defendantRespond",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "disputeKey",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32[]",
+              "name": "data",
+              "type": "bytes32[]"
+            }
+          ],
+          "internalType": "struct Merkle.Proof",
+          "name": "proof",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bool",
+              "name": "temp",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct Machine.State",
+          "name": "state",
+          "type": "tuple"
+        }
+      ],
+      "name": "defendantRevealBottom",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "disputeKey",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getDispute",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "answerKey",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "defendantRoot",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "address",
+              "name": "prosecutor",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "lastActionTimestamp",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "numberOfSteps",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "disagreementPoint",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "firstDivergentStateHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint256",
+              "name": "depth",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "goRight",
+              "type": "bool"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "bytes32",
+                  "name": "left",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "right",
+                  "type": "bytes32"
+                }
+              ],
+              "internalType": "struct Merkle.TreeNode",
+              "name": "defendantNode",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "bytes32",
+                  "name": "left",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "right",
+                  "type": "bytes32"
+                }
+              ],
+              "internalType": "struct Merkle.TreeNode",
+              "name": "prosecutorNode",
+              "type": "tuple"
+            },
+            {
+              "internalType": "enum ICourt.DisputeState",
+              "name": "state",
+              "type": "uint8"
+            }
+          ],
+          "internalType": "struct ICourt.Dispute",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "answerKey",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "left",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "right",
+              "type": "bytes32"
+            }
+          ],
+          "internalType": "struct Merkle.TreeNode",
+          "name": "prosecutorNode",
+          "type": "tuple"
+        }
+      ],
+      "name": "newDispute",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "oracle",
+      "outputs": [
+        {
+          "internalType": "contract IOracle",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "disputeKey",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "left",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "right",
+              "type": "bytes32"
+            }
+          ],
+          "internalType": "struct Merkle.TreeNode",
+          "name": "node",
+          "type": "tuple"
+        }
+      ],
+      "name": "prosecutorRespond",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "disputeKey",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "left",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "right",
+              "type": "bytes32"
+            }
+          ],
+          "internalType": "struct Merkle.TreeNode",
+          "name": "node",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32[]",
+              "name": "data",
+              "type": "bytes32[]"
+            }
+          ],
+          "internalType": "struct Merkle.Proof",
+          "name": "proofLeft",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32[]",
+              "name": "data",
+              "type": "bytes32[]"
+            }
+          ],
+          "internalType": "struct Merkle.Proof",
+          "name": "proofRight",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bool",
+              "name": "temp",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct Machine.State",
+          "name": "finalState",
+          "type": "tuple"
+        }
+      ],
+      "name": "reveal",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "disputeKey",
+          "type": "bytes32"
+        }
+      ],
+      "name": "timeout",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "evm": {
+    "bytecode": {
+      "linkReferences": {},
+      "object": "",
+      "opcodes": "",
+      "sourceMap": ""
+    },
+    "deployedBytecode": {
+      "immutableReferences": {},
+      "linkReferences": {},
+      "object": "",
+      "opcodes": "",
+      "sourceMap": ""
+    }
+  },
+  "interface": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "answerKey",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "prosecutorRoot",
+          "type": "bytes32"
+        }
+      ],
+      "name": "NewDispute",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "disputeKey",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "defendantRoot",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bool",
+              "name": "temp",
+              "type": "bool"
+            }
+          ],
+          "indexed": false,
+          "internalType": "struct Machine.State",
+          "name": "finalState",
+          "type": "tuple"
+        }
+      ],
+      "name": "Reveal",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "disputeKey",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "left",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "right",
+              "type": "bytes32"
+            }
+          ],
+          "internalType": "struct Merkle.TreeNode",
+          "name": "node",
+          "type": "tuple"
+        }
+      ],
+      "name": "defendantRespond",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "disputeKey",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32[]",
+              "name": "data",
+              "type": "bytes32[]"
+            }
+          ],
+          "internalType": "struct Merkle.Proof",
+          "name": "proof",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bool",
+              "name": "temp",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct Machine.State",
+          "name": "state",
+          "type": "tuple"
+        }
+      ],
+      "name": "defendantRevealBottom",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "disputeKey",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getDispute",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "answerKey",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "defendantRoot",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "address",
+              "name": "prosecutor",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "lastActionTimestamp",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "numberOfSteps",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "disagreementPoint",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "firstDivergentStateHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint256",
+              "name": "depth",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "goRight",
+              "type": "bool"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "bytes32",
+                  "name": "left",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "right",
+                  "type": "bytes32"
+                }
+              ],
+              "internalType": "struct Merkle.TreeNode",
+              "name": "defendantNode",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "bytes32",
+                  "name": "left",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "right",
+                  "type": "bytes32"
+                }
+              ],
+              "internalType": "struct Merkle.TreeNode",
+              "name": "prosecutorNode",
+              "type": "tuple"
+            },
+            {
+              "internalType": "enum ICourt.DisputeState",
+              "name": "state",
+              "type": "uint8"
+            }
+          ],
+          "internalType": "struct ICourt.Dispute",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "answerKey",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "left",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "right",
+              "type": "bytes32"
+            }
+          ],
+          "internalType": "struct Merkle.TreeNode",
+          "name": "prosecutorNode",
+          "type": "tuple"
+        }
+      ],
+      "name": "newDispute",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "oracle",
+      "outputs": [
+        {
+          "internalType": "contract IOracle",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "disputeKey",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "left",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "right",
+              "type": "bytes32"
+            }
+          ],
+          "internalType": "struct Merkle.TreeNode",
+          "name": "node",
+          "type": "tuple"
+        }
+      ],
+      "name": "prosecutorRespond",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "disputeKey",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "left",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "right",
+              "type": "bytes32"
+            }
+          ],
+          "internalType": "struct Merkle.TreeNode",
+          "name": "node",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32[]",
+              "name": "data",
+              "type": "bytes32[]"
+            }
+          ],
+          "internalType": "struct Merkle.Proof",
+          "name": "proofLeft",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32[]",
+              "name": "data",
+              "type": "bytes32[]"
+            }
+          ],
+          "internalType": "struct Merkle.Proof",
+          "name": "proofRight",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bool",
+              "name": "temp",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct Machine.State",
+          "name": "finalState",
+          "type": "tuple"
+        }
+      ],
+      "name": "reveal",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "disputeKey",
+          "type": "bytes32"
+        }
+      ],
+      "name": "timeout",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": ""
+}
