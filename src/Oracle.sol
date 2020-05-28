@@ -83,7 +83,7 @@ interface IOracle {
   ) external;
 }
 
-abstract contract AOracle is IOracle {
+contract Oracle is IOracle {
   mapping (bytes32 => Question) public questions;
   mapping (bytes32 => Answer) public answers;
 
