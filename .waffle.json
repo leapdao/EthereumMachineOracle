@@ -1,3 +1,4 @@
 {
-  "sourceDirectory": "./src"
+  "sourceDirectory": "./src",
+  "compilerVersion": "0.6.8"
 }
