@@ -121,6 +121,7 @@ contract Court is ICourt {
     emit NewDispute(answerKey, prosecutorRoot);
   }
 
+  // rename to defendanNode
   function reveal (
     bytes32 disputeKey,
     Merkle.TreeNode calldata node,
@@ -148,7 +149,7 @@ contract Court is ICourt {
 
     // Workaround
     Merkle.TreeNode memory _node = node;
-    
+
     dispute.defendantRoot = defendantRoot;
     dispute.defendantNode = _node;
     dispute.lastActionTimestamp = now;

@@ -1,4 +1,4 @@
-const {MockProvider, getWallets, deployContract, link} = require('ethereum-waffle');
+const {deployContract, link} = require('ethereum-waffle');
 
 const Machine = require('./build/Machine.json');
 const Merkle = require('./build/Merkle.json');
@@ -32,11 +32,4 @@ const deploy = (wallet) => async () => {
   return [machine, merkle, oracle, court];
 }
 
-const run = async () => {
-  const provider = new MockProvider();
-  const [wallet] = provider.getWallets();
-  const contracts = await deploy(wallet)();
-  contracts.forEach(con => console.log(con.address));
-}
-
-run();
+module.exports = deploy;
