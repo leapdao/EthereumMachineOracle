@@ -14,7 +14,7 @@ library Merkle {
   }
 
   function hash (TreeNode memory self)
-    internal
+    public
     pure
     returns (bytes32)
   {
@@ -22,7 +22,7 @@ library Merkle {
   }
 
   function eval (Proof memory self)
-    internal
+    public
     pure
     returns (bytes32 leaf, bytes32 root, uint index)
   {

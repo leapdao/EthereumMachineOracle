@@ -6,15 +6,15 @@ pragma experimental ABIEncoderV2;
 library Machine {
   
   struct State {
-    bool temp;
+    bytes32[] temp;
   }
 
   struct Seed {
-    bool temp;
+    bytes32[] temp;
   }
 
   struct Image {
-    bool temp;
+    bytes32[] temp;
   }
 
   function create(Seed memory _seed)
