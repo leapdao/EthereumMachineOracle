@@ -29,6 +29,14 @@ const deploy = (wallet) => async () => {
     Court,
     []
   );
+
+  oracle.interface._abiCoder._getCoder = function (param) {
+    if (param.type === "function") {
+      return this.__proto__._getCoder({...param, type: 'bytes24'});
+    }
+    return this.__proto__._getCoder(param);
+  }
+
   return [machine, merkle, oracle, court];
 }
 
