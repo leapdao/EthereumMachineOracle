@@ -159,7 +159,7 @@ contract Oracle is IOracle {
 
     bytes32 questionKey = answer.questionKey;
     delete answers[answerKey];
-    payable(prosecutor).call.{value: STAKE_SIZE}("");
+    payable(prosecutor).call{value: STAKE_SIZE}("");
 
     emit AnswerFalsified(questionKey, answerKey);
   }
