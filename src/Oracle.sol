@@ -6,11 +6,11 @@ import "./Machine.template.sol";
 
 interface IOracle {
 
-  // questionKey is initialStateHash          
+  // questionKey is initialStateHash
   struct Question {
     uint askTime;
     uint timeout;
-    bytes32[] answerKeys;
+    mapping(bytes32 => bool) answerEverExist;
     function(bytes32, Machine.Image memory) external successCallback;
     function(bytes32) external failCallback;
   }
@@ -18,7 +18,6 @@ interface IOracle {
   // answerKey is imageHash
   struct Answer {
     address answerer;
-    bool falsified;
     bytes32 questionKey;
   }
 
@@ -116,7 +115,7 @@ contract Oracle is IOracle {
     Question storage question = questions[questionKey];
 
     require(!_questionExists(questionKey), "Question already exists.");
-    require(timeout > 0, "Timeout must be greater then zero.");
+    require(timeout > 0 && (2 * timeout) + now > (2 * timeout), "Timeout must be greater then zero and be in overflow bounds.");
 
     question.askTime = now;
     question.timeout = timeout;
@@ -133,14 +132,14 @@ contract Oracle is IOracle {
   {
     Question storage question = questions[questionKey];
     Answer storage answer = answers[imageHash];
-    
+
     require(msg.value >= STAKE_SIZE, "Not enough stake sent.");
     require(_questionExists(questionKey), "Question does not exist.");
-    require(!_answerExists(imageHash), "Answer already exists.");
-    require(_enoughTimeForAnswer(questionKey), "There is not enoguh time left for submitting new answers to this question.");
-    require(question.answerKeys.length < MAX_ANSWER_NUMBER, "All the answer slots are full");
+    require(!question.answerEverExist[imageHash], "Answer already exists.");
+    require(_enoughTimeForAnswer(questionKey), "There is not enough time left for submitting new answers to this question.");
+    //require(question.answerKeys.length < MAX_ANSWER_NUMBER, "All the answer slots are full");
 
-    question.answerKeys.push(imageHash);
+    question.answerEverExist[imageHash] = true;
 
     answer.answerer = msg.sender;
     answer.questionKey = questionKey;
@@ -155,13 +154,14 @@ contract Oracle is IOracle {
   {
     Answer storage answer = answers[answerKey];
 
-    require(_answerExists(answerKey), "The answer trying to be falsified does not exist");
+    require(_answerStillExists(answerKey), "The answer trying to be falsified does not exist or was already falsified");
     require(msg.sender == court, "Only court can falsify answers");
 
-    answer.falsified = true;
-    payable(prosecutor).call.value(STAKE_SIZE)("");
+    bytes32 questionKey = answer.questionKey;
+    delete answers[answerKey];
+    payable(prosecutor).call.{value: STAKE_SIZE}("");
 
-    emit AnswerFalsified(answer.questionKey, answerKey);
+    emit AnswerFalsified(questionKey, answerKey);
   }
 
   function resolveSuccess (
@@ -172,17 +172,16 @@ contract Oracle is IOracle {
     Answer storage answer = answers[answerKey];
     Question storage question = questions[answer.questionKey];
 
-    require(_questionExists(answer.questionKey) && _answerExists(answerKey), "Question and answer must exists.");
+    require(_questionExists(answer.questionKey) && _answerStillExists(answerKey), "Question and answer must exists.");
     require(now >= question.askTime + question.timeout, "Answering is still in progress.");
     require(Machine.imageHash(image) == answerKey, "Image hash does not match answerKey.");
-    require(!answer.falsified, "This answer was falsified");
 
     bytes32 questionKey = answer.questionKey;
     address answerer = answer.answerer;
     function(bytes32, Machine.Image memory) external callback = question.successCallback;
 
     _questionCleanup(questionKey);
-    payable(answerer).call.value(STAKE_SIZE)("");
+    payable(answerer).call{value: STAKE_SIZE}("");
 
     try callback(questionKey, image) {
       emit QuestionResolvedSuccessfully(questionKey, image);
@@ -203,7 +202,7 @@ contract Oracle is IOracle {
     function(bytes32) external callback = question.failCallback;
 
     _questionCleanup(questionKey);
-    
+
     try callback(questionKey) {
       emit QuestionResolvedUnsuccessfully(questionKey);
     } catch {
@@ -215,10 +214,6 @@ contract Oracle is IOracle {
     bytes32 questionKey
   ) internal
   {
-    for (uint i = 0; i < questions[questionKey].answerKeys.length; i ++) {
-      bytes32 answerKey = questions[questionKey].answerKeys[i];
-      delete answers[answerKey];
-    }
     delete questions[questionKey];
   }
 
@@ -229,7 +224,7 @@ contract Oracle is IOracle {
     return questions[questionKey].askTime > 0;
   }
 
-  function _answerExists (
+  function _answerStillExists (
     bytes32 answerKey
   ) internal view returns (bool)
   {
