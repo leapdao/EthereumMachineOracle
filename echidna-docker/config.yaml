@@ -1,0 +1,5 @@
+coverage: true
+corpusDir: "corpus"
+testLimit: 500
+seqLen: 50
+# format: "json"
