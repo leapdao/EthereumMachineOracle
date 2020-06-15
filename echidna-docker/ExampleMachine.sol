@@ -190,10 +190,21 @@ library Machine {
   function generate(uint seed)
     public
     pure
-    returns (State memory, State memory)
+    returns (State memory state1, State memory state2)
   {
     State memory state1;
     State memory state2;
+
+    uint sum = seed;
+    seed = uint(keccak256(abi.encode(seed)));
+
+    (DarkStack.Stack memory s1, DarkStack.Stack memory s2) = DarkStack.generate(seed);
+
+    state1.sum = sum;
+    state1.stack = s1;
+
+    state2.sum = sum;
+    state2.stack = s2;
 
     return (state1, state2);
   }

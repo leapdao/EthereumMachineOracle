@@ -1,5 +1,6 @@
 coverage: true
 corpusDir: "corpus"
+solcLibs: ["ExampleMachine.sol:Machine"]
 testLimit: 500
 seqLen: 50
 # format: "json"
