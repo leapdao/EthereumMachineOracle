@@ -12,7 +12,7 @@ interface IOracle {
     uint askTime;
     uint timeout;
     bytes32[] answerKeys;
-    uint amountOfAnswers;
+    uint numberOfUnfalsifiedAnswers;
     function(bytes32, Machine.Image memory) external successCallback;
     function(bytes32) external failCallback;
   }
@@ -20,7 +20,7 @@ interface IOracle {
   // answerKey is imageHash
   struct Answer {
     address answerer;
-    uint position;
+    uint indexInQuestionArray;
     bytes32 questionKey;
   }
 
@@ -140,11 +140,11 @@ contract Oracle is IOracle {
     require(_questionExists(questionKey), "Question does not exist.");
     require(!_answerExists(imageHash), "Answer already exists.");
     require(_enoughTimeForAnswer(questionKey), "There is not enough time left for submitting new answers to this question.");
-    require(question.amountOfAnswers < MAX_ANSWER_NUMBER, "All the answer slots are full, wait until wrong answers will be falsified.");
+    require(question.numberOfUnfalsifiedAnswers < MAX_ANSWER_NUMBER, "All the answer slots are full, wait until wrong answers will be falsified.");
 
-    answer.position = question.answerKeys.length;
+    answer.indexInQuestionArray = question.answerKeys.length;
     question.answerKeys.push(imageHash);
-    question.amountOfAnswers++;
+    question.numberOfUnfalsifiedAnswers++;
 
     answer.answerer = msg.sender;
     answer.questionKey = questionKey;
@@ -162,17 +162,9 @@ contract Oracle is IOracle {
     require(_answerExists(answerKey), "The answer trying to be falsified does not exist or was already falsified.");
     require(msg.sender == court, "Only court can falsify answers");
 
-    Question storage question = questions[answer.questionKey];
     bytes32 questionKey = answer.questionKey;
+    _removeAnswer(answerKey);
 
-    if (answer.position == question.answerKeys.length - 1) {
-      question.answerKeys.pop();
-    } else {
-      delete question.answerKeys[answer.position];
-    }
-    question.amountOfAnswers--;
-
-    delete answers[answerKey];
     payable(prosecutor).call{value: STAKE_SIZE}("");
 
     emit AnswerFalsified(questionKey, answerKey);
@@ -189,12 +181,7 @@ contract Oracle is IOracle {
     require(_questionExists(answer.questionKey) && _answerExists(answerKey), "Question and answer must exists.");
     require(now >= question.askTime + question.timeout, "Answering is still in progress.");
     require(Machine.imageHash(image) == answerKey, "Image hash does not match answerKey.");
-
-    // Maybe here we should add check to ensure that all wrong answers were already falsified and if no just increase timeout
-    if (question.amountOfAnswers > 1) {
-      question.timeout += 3600;
-      return;
-    }
+    require(question.numberOfUnfalsifiedAnswers == 1,"Must be only one answer to resolve success.");
 
     bytes32 questionKey = answer.questionKey;
     address answerer = answer.answerer;
@@ -224,15 +211,7 @@ contract Oracle is IOracle {
 
     function(bytes32) external callback = question.failCallback;
 
-    for (uint i = 0; i < question.answerKeys.length; i ++) {
-      if (question.answerKeys[i] > 0) {
-        bytes32 answerKey = question.answerKeys[i];
-        delete answers[answerKey];
-      }
-    }
-
-    // here (not sure) potentially could fail.
-    delete questions[questionKey];
+    _removeQuestion(questionKey);
 
     try callback(questionKey) {
       emit QuestionResolvedUnsuccessfully(questionKey);
@@ -261,5 +240,39 @@ contract Oracle is IOracle {
   {
     Question storage question = questions[questionKey];
     return now < question.askTime + (question.timeout / 3);
+  }
+
+  function _removeAnswer (
+    bytes32 answerKey
+  ) internal
+  {
+    Answer storage answer = answers[answerKey];
+    Question storage question = questions[answer.questionKey];
+
+    if (answer.indexInQuestionArray == question.answerKeys.length - 1) {
+      question.answerKeys.pop();
+    } else {
+      delete question.answerKeys[answer.indexInQuestionArray];
+    }
+    question.numberOfUnfalsifiedAnswers--;
+
+    delete answers[answerKey];
+  }
+
+  function _removeQuestion (
+    bytes32 questionKey
+  ) internal
+  {
+    Question storage question = questions[questionKey];
+
+    for (uint i = 0; i < question.answerKeys.length; i ++) {
+      if (question.answerKeys[i] > 0) {
+        bytes32 answerKey = question.answerKeys[i];
+        delete question.answerKeys[i];
+        delete answers[answerKey];
+      }
+    }
+
+    delete questions[questionKey];
   }
 }
