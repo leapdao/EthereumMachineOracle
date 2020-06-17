@@ -189,6 +189,7 @@ contract Oracle is IOracle {
 
     //_questionCleanup
     delete answers[answerKey];
+    delete questions[questionKey].answerKeys[answer.indexInQuestionArray];
     delete questions[questionKey];
 
     payable(answerer).call{value: STAKE_SIZE}("");
