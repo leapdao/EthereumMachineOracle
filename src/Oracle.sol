@@ -188,8 +188,8 @@ contract Oracle is IOracle {
     function(bytes32, Machine.Image memory) external callback = question.successCallback;
 
     //_questionCleanup
-    delete answers[answerKey];
     delete questions[questionKey].answerKeys[answer.indexInQuestionArray];
+    delete answers[answerKey];
     delete questions[questionKey];
 
     payable(answerer).call{value: STAKE_SIZE}("");
