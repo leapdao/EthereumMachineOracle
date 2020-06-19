@@ -25,7 +25,7 @@ const encodeFunctionType = (...args) => {
   if (isBytes24) {
     return args[0];
   } else if (isAddrAndSig) {
-    return (args[0] + args[1].replace("0x",""));
+    return (args[0] + args[1].replace("0x", ""));
   } else if (isContractAndName) {
     const contract = args[0];
     const functionName = args[1];
@@ -39,7 +39,7 @@ const encodeFunctionType = (...args) => {
         return cv;
       else
         return acc;
-    }, false);
+    });
     const funcSelector = contract.interface.getSighash(funcFragment);
     
     return (contract.address + funcSelector.replace("0x", ""));
