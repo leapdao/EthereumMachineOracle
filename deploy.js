@@ -25,7 +25,7 @@ const encodeFunctionType = (...args) => {
   if (isBytes24) {
     return args[0];
   } else if (isAddrAndSig) {
-    return (args[0] + args[1].replace("0x",g ""));
+    return (args[0] + args[1].replace("0x",""));
   } else if (isContractAndName) {
     const contract = args[0];
     const functionName = args[1];
