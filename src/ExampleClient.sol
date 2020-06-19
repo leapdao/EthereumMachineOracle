@@ -16,7 +16,7 @@ contract EMOClient {
 
   mapping(bytes32 => bytes32) public cache; // initialStateHash => imageHash
   mapping(bytes32 => Machine.Image) images; // imageHash => image
-  mapping(bytes32 => uint8) public retried; // initialStateHash => bool
+  mapping(bytes32 => uint8) public timesRetried; // initialStateHash => timesRetried
   mapping(bytes32 => bool) public failed; // initialStateHash => bool
 
   constructor(address _oracle, uint _defaultTimeout) public {
@@ -24,11 +24,11 @@ contract EMOClient {
     defaultTimeout = _defaultTimeout;
   }
 
-  function askOracle(Machine.Seed memory _seed, uint _timeout) public {
+  function askOracle(Machine.Seed memory _seed) public {
     require(!_isAlreadyImageForSeed(_seed), "There is already image for your seed, please call showImage instead.");
     bytes32 initialStateHash = _seedToInitialStateHash(_seed);
     seeds[initialStateHash] = _seed;
-    oracle.ask(_seed, _timeout, this.successCallback, this.failCallback);
+    oracle.ask(_seed, defaultTimeout, this.successCallback, this.failCallback);
   }
 
   function successCallback(bytes32 _initialStateHash, Machine.Image memory _image) public {
