@@ -38,7 +38,7 @@ contract EMOClient {
   }
 
   function failCallback(bytes32 _questionKey) external {
-    if (retried[_questionKey] > 3) {
+    if (timesRetried[_questionKey] > 3) {
       failed[_questionKey] = true;
     } else {
       _retry(_questionKey);
@@ -70,7 +70,7 @@ contract EMOClient {
   function _retry(bytes32 _initialStateHash) internal {
     Machine.Seed memory seed = seeds[_initialStateHash];
     oracle.ask(seed, defaultTimeout, this.successCallback, this.failCallback);
-    retried[_initialStateHash]++;
+    timesRetried[_initialStateHash]++;
   }
 
 }
