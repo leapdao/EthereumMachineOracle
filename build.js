@@ -12,46 +12,47 @@ const waffleConfig = {
 
 const machinePath = process.argv[2] || machineTemplatePath;
 
-const rmDir = (dirPath) => {
-  try {
-    fs.readdirSync(dirPath)
-      .map(name => dirPath + '/' + name)
-      .forEach(filePath => {
-        if (fs.statSync(filePath).isFile())
-          fs.unlinkSync(filePath);
-        else
-          rmDir(filePath);
-      });
-    fs.rmdirSync(dirPath);
-  } catch {
-    return;
+const mapOverFileTree = (dirPath, fileFunc, dirFunc) => {
+  return () => {
+    try {
+      fs.readdirSync(dirPath)
+        .forEach(fileName => {
+          const filePath = dirPath + '/' + fileName;
+          if (fs.statSync(filePath).isFile())
+            fileFunc(filePath);
+          else
+            mapOverFileTree(filePath, fileFunc, dirFunc)();
+        });
+      dirFunc(dirPath);
+    } catch {
+      return;
+    }
   }
 }
 
+const rmDir = (dirPath) => {
+  return mapOverFileTree(dirPath,
+                         (filePath) =>  fs.unlinkSync(filePath),
+                         (dirPath) => fs.rmdirSync(dirPath));
+}
+
 const copyDir = (srcDir, destDir) => {
-  fs.readdirSync(srcDir)
-    .forEach(fileName => {
-      const srcPath = srcDir + '/' + fileName;
-      const destPath = destDir + '/' + fileName;
-      if (fs.statSync(srcPath).isFile())
-        fs.copyFileSync(srcPath, destPath);
-      else
-        copyDir(srcPath, destPath);
-    });
+  return mapOverFileTree(srcDir,
+                         (filePath) =>fs.copyFileSync(filePath, destDir + filePath.replace(srcPath, "")),
+                         (destDir) => {});          
 }
 
 const createTemp = () => fs.mkdirSync(tempPath);
-const removeTemp = () => rmDir(tempPath);
-const copySrcToTemp = () => copyDir(srcPath, tempPath);
-const fillTemplate = () => {
-  fs.readdirSync(tempPath)
-    .map(name => tempPath + '/' + name)
-    .forEach(filePath => {
-      const contents = fs.readFileSync(filePath, "utf8");
-      const newContents = contents.replace(machineTemplatePath, machinePath);
-      fs.writeFileSync(filePath, newContents, "utf8");
-    })
-}
+const removeTemp = rmDir(tempPath);
+const copySrcToTemp = copyDir(srcPath, tempPath);
+const fillTemplate = mapOverFileTree(tempPath,
+                                     (filePath) => {
+                                       const contents = fs.readFileSync(filePath, "utf8");
+                                       const newContents = contents.replace(machineTemplatePath, machinePath);
+                                       fs.writeFileSync(filePath, newContents, "utf8");
+                                     },
+                                     (dirPath) => {});
+
 
 const main = async () => {
   removeTemp();
