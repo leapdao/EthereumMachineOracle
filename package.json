@@ -21,5 +21,8 @@
     "chai": "^4.2.0",
     "ethereum-waffle": "^3.0.0-beta.1",
     "mocha": "^7.1.2"
+  },
+  "dependencies": {
+    "solidity-parser-antlr": "^0.4.11"
   }
 }

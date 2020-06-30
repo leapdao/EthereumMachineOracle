@@ -10,7 +10,7 @@ const waffleConfig = {
   "compilerVersion": "0.6.8",
 }
 
-const machinePath = process.argv[2] || machineTemplatePath;
+const machinePath = process.env.MACHINE || machineTemplatePath;
 
 const mapOverFileTree = (dirPath, fileFunc, dirFunc) => {
   return () => {
@@ -38,7 +38,7 @@ const rmDir = (dirPath) => {
 
 const copyDir = (srcDir, destDir) => {
   return mapOverFileTree(srcDir,
-                         (filePath) =>fs.copyFileSync(filePath, destDir + filePath.replace(srcPath, "")),
+                         (filePath) => fs.copyFileSync(filePath, destDir + filePath.replace(srcPath, "")),
                          (destDir) => {});          
 }
 

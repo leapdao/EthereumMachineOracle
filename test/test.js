@@ -1,3 +1,4 @@
+
 const {use, expect} = require('chai');
 const {MockProvider, solidity, loadFixture} = require('ethereum-waffle');
 const {deploy, encodeFunctionType} = require("../deploy.js");
@@ -5,8 +6,10 @@ const ethers = require("ethers");
 
 use(solidity);
 
+const machine = process.env.MACHINE || "Machine.template.sol";
+
 const fixture = async (provider, [wallet]) => {
-  const contracts = await deploy(wallet)();
+  const contracts = await deploy(wallet, "temp/" + machine)();
   return contracts;
 }
 

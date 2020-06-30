@@ -59,7 +59,7 @@ const pimpOracle = (oracle) => {
   
 }
 
-const deploy = (wallet) => async () => {
+const deploy = (wallet, machineFilePath) => async () => {
   const machine = await deployContract(
     wallet,
     Machine,
@@ -70,9 +70,14 @@ const deploy = (wallet) => async () => {
     Merkle,
     [],
   );
-  link(Oracle, 'src/Machine.template.sol:Machine', machine.address);
-  link(Court, 'src/Machine.template.sol:Machine', machine.address);
-  link(Court, 'src/Merkle.sol:Merkle', merkle.address);
+  try {
+    const machineString = machineFilePath + ":Machine";
+    link(Oracle, machineString, machine.address);
+    link(Court, machineString, machine.address);
+  } catch {
+    throw new Error("Linking the Machine failed. Are you deploying with the same Machine you compiled?");
+  }
+  link(Court, 'temp/Merkle.sol:Merkle', merkle.address);
   const oracle = await deployContract(
     wallet,
     Oracle,
