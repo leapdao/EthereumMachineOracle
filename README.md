@@ -22,9 +22,9 @@ Setup:
 ```npm install```
 
 Build:
-```npm run build```
+```MACHINE=ExampleMachine.sol node build```
 
 Test:
-```npm run test```
+```MACHINE=ExampleMachine.sol npm run test```
 
 ## [Explainer](https://hackmd.io/DXVvXgFKRQae8Sy3ncrJ3g?view)
