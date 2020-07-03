@@ -1,5 +1,7 @@
 const {deployContract, link} = require('ethereum-waffle');
 const {utils} = require('ethers');
+const fs = require('fs');
+const getStructGeneratorsForCode = require('./structGen.js');
 
 const Machine = require('./build/Machine.json');
 const Merkle = require('./build/Merkle.json');
@@ -90,6 +92,11 @@ const deploy = (wallet, machineFilePath) => async () => {
   );
 
   pimpOracle(oracle);
+  machine.gen = getStructGeneratorsForCode(
+    fs.readFileSync(
+      machineFilePath.replace('temp', 'src'), 'utf8'
+    )
+  );
 
   return [machine, merkle, oracle, court];
 }

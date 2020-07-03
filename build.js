@@ -38,7 +38,13 @@ const rmDir = (dirPath) => {
 
 const copyDir = (srcDir, destDir) => {
   return mapOverFileTree(srcDir,
-                         (filePath) => fs.copyFileSync(filePath, destDir + filePath.replace(srcPath, "")),
+                         (filePath) => {
+                           const skip = process.env.MACHINE
+                                 && !(process.env.MACHINE === machineTemplatePath)
+                                 && filePath.includes(machineTemplatePath);
+                           if (!skip)
+                             fs.copyFileSync(filePath, destDir + filePath.replace(srcPath, ""));
+                         },
                          (destDir) => {});          
 }
 
