@@ -22,7 +22,7 @@ Setup:
 ```npm install```
 
 Build:
-```MACHINE=ExampleMachine.sol node build```
+```MACHINE=ExampleMachine.sol node build.js```
 
 Test:
 ```MACHINE=ExampleMachine.sol npm run test```
