@@ -93,7 +93,7 @@ function generateElementaryType(elementaryType: ElementaryTypeName, ast: ASTNode
             return def;
     }
     const getRandomByte = () => {
-        const num = getRandomIntInRange(0, 63);
+        const num = getRandomIntInRange(0, 255);
         return utils.hexlify(num);
     }
     const getRandomBytes = (num) => {
