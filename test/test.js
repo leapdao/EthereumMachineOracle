@@ -1,3 +1,4 @@
+
 const {use, expect} = require('chai');
 const {MockProvider, solidity, loadFixture} = require('ethereum-waffle');
 const {deploy, encodeFunctionType} = require("../deploy.js");
@@ -5,20 +6,22 @@ const ethers = require("ethers");
 
 use(solidity);
 
+const machine = process.env.MACHINE || "Machine.template.sol";
+
 const fixture = async (provider, [wallet]) => {
-  const contracts = await deploy(wallet)();
+  const contracts = await deploy(wallet, "temp/" + machine)();
   return contracts;
 }
 
-describe('EMO', () => {
+describe('EMO', function () {
+
+  this.timeout(5000);
 
   it('Can call ask with bytes24', async () => {
     const [machine, merkle, oracle, court] = await loadFixture(fixture);
-        
+
     const askTx = await oracle.ask(
-      {
-        temp: ["0x0000000000000000000000000000000000000000000000000000000000000000"]
-      },
+      machine.gen.genSeed(),
       5,
       encodeFunctionType("0x333333333333333333333333333333333333333333333333"),
       encodeFunctionType("0x333333333333333333333333333333333333333333333333"),
@@ -32,9 +35,7 @@ describe('EMO', () => {
     const [machine, merkle, oracle, court] = await loadFixture(fixture);
         
     const askTx = await oracle.ask(
-      {
-        temp: ["0x0000000000000000000000000000000000000000000000000000000000000000"]
-      },
+      machine.gen.genSeed(),
       5,
       encodeFunctionType("0x3333333333333333333333333333333333333333", "0x33333333"),
       encodeFunctionType("0x3333333333333333333333333333333333333333", "0x33333333"),
@@ -48,9 +49,7 @@ describe('EMO', () => {
     const [machine, merkle, oracle, court] = await loadFixture(fixture);
         
     const askTx = await oracle.ask(
-      {
-        temp: ["0x0000000000000000000000000000000000000000000000000000000000000000"]
-      },
+      machine.gen.genSeed(),
       5,
       encodeFunctionType(oracle, "ask"),
       encodeFunctionType(oracle, "answer"),
