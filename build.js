@@ -65,7 +65,11 @@ const main = async () => {
   createTemp();
   copySrcToTemp();
   fillTemplate();
-  await compileAndSave(waffleConfig);
+  try {
+    await compileAndSave(waffleConfig);
+  } catch (e) {
+    console.log(e);
+  }
   removeTemp();
 }
 main();
