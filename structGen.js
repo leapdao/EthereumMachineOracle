@@ -102,7 +102,7 @@ function generateElementaryType(elementaryType, ast) {
     switch (typeName) {
         case 'bool':
             return Math.random() > 0.5;
-        case 'addess':
+        case 'address':
             return getRandomBytes(20);
         default:
             if (isInt(typeName)) {
