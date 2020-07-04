@@ -1,5 +1,5 @@
 const fs = require("fs");
-const {compileAndSave, compile} = require('@ethereum-waffle/compiler');
+const {compileAndSave} = require('@ethereum-waffle/compiler');
 
 const tempPath = "temp";
 const srcPath = "src";
