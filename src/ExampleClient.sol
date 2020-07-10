@@ -10,7 +10,7 @@ import "./Machine.template.sol";
 contract EMOClient {
   IOracle oracle;
 
-  uint defaultTimeout;
+  uint public defaultTimeout;
 
   mapping(bytes32 => Machine.Seed) seeds; // initialStateHash => seed
 
@@ -38,7 +38,7 @@ contract EMOClient {
   }
 
   function failCallback(bytes32 _questionKey) external {
-    if (timesRetried[_questionKey] > 3) {
+    if (timesRetried[_questionKey] >= 2) {
       failed[_questionKey] = true;
     } else {
       _retry(_questionKey);
@@ -58,8 +58,16 @@ contract EMOClient {
     return images[imageHash];
   }
 
+  function showSeedByInitialStateHash(bytes32 _initialStateHash) external view returns(Machine.Seed memory) {
+    return seeds[_initialStateHash];
+  }
+
+  function imageHashForExampleMachine(Machine.Image memory _image) public pure returns(bytes32) {
+    return keccak256(abi.encodePacked(_image.sum));
+  }
+
   // Maybe set visibility to public, so the user can also compute and use initialStateHash instead of seed
-  function _seedToInitialStateHash(Machine.Seed memory _seed) internal pure returns(bytes32) {
+  function _seedToInitialStateHash(Machine.Seed memory _seed) public pure returns(bytes32) {
     return Machine.stateHash(Machine.create(_seed));
   }
 

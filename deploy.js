@@ -7,6 +7,7 @@ const Machine = require('./build/Machine.json');
 const Merkle = require('./build/Merkle.json');
 const Oracle = require('./build/Oracle.json');
 const Court = require('./build/Court.json');
+const Client = require('./build/EMOClient.json');
 
 const encodeFunctionType = (...args) => {
   const isBytes24 =
@@ -35,7 +36,7 @@ const encodeFunctionType = (...args) => {
     if (!contract.functions.hasOwnProperty(functionName)) {
       throw new Error("The given contract does not have the function that was given!");
     }
-    
+
     const funcFragment = contract.interface.fragments.reduce((acc, cv) => {
       if (cv.type === "function" && cv.name === functionName)
         return cv;
@@ -43,7 +44,7 @@ const encodeFunctionType = (...args) => {
         return acc;
     });
     const funcSelector = contract.interface.getSighash(funcFragment);
-    
+
     return (contract.address + funcSelector.replace("0x", ""));
   } else {
     throw new Error("Wrong argument types!");
@@ -51,17 +52,17 @@ const encodeFunctionType = (...args) => {
 }
 
 const pimpOracle = (oracle) => {
-  
+
   oracle.interface._abiCoder._getCoder = function (param) {
     if (param.type === "function") {
       return this.__proto__._getCoder({...param, type: 'bytes24'});
     }
     return this.__proto__._getCoder(param);
   }
-  
+
 }
 
-const deploy = (wallet, machineFilePath) => async () => {
+const deploy = (wallet, machineFilePath, defaultTimeout) => async () => {
   const machine = await deployContract(
     wallet,
     Machine,
@@ -76,6 +77,7 @@ const deploy = (wallet, machineFilePath) => async () => {
     const machineString = machineFilePath + ":Machine";
     link(Oracle, machineString, machine.address);
     link(Court, machineString, machine.address);
+    link(Client, machineString, machine.address);
   } catch {
     throw new Error("Linking the Machine failed. Are you deploying with the same Machine you compiled?");
   }
@@ -83,12 +85,18 @@ const deploy = (wallet, machineFilePath) => async () => {
   const oracle = await deployContract(
     wallet,
     Oracle,
-    []
+    ["100000000000000000", 1000, wallet.address]
   );
   const court = await deployContract(
     wallet,
     Court,
     []
+  );
+
+  const client = await deployContract(
+    wallet,
+    Client,
+    [oracle.address, defaultTimeout]
   );
 
   pimpOracle(oracle);
@@ -98,7 +106,7 @@ const deploy = (wallet, machineFilePath) => async () => {
     )
   );
 
-  return [machine, merkle, oracle, court];
+  return [machine, merkle, oracle, court, client];
 }
 
 module.exports = {
