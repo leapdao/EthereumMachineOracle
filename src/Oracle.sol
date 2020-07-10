@@ -93,11 +93,24 @@ contract Oracle is IOracle {
   uint public STAKE_SIZE;
   uint public MAX_ANSWER_NUMBER;
 
+  constructor(uint _stake_size, uint _max_answer_number, address _court) public {
+    court = _court;
+    STAKE_SIZE = _stake_size;
+    MAX_ANSWER_NUMBER = _max_answer_number;
+  }
+
   function getQuestion (
     bytes32 questionKey
   ) override external view returns (Question memory)
   {
     return questions[questionKey];
+  }
+
+  function getQuestionTime(bytes32 questionKey) external view returns(uint, uint) {
+    Question memory question = questions[questionKey];
+    uint askTime = question.askTime;
+    uint timeout = question.timeout;
+    return (askTime, timeout);
   }
 
   function getAnswer (
