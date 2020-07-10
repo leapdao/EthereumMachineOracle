@@ -102,8 +102,8 @@ describe('EMO', function () {
       "sum": sum
     };
 
-    let successCallback = client.address + client.interface.getSighash(client.interface.getFunction('successCallback')).replace('0x','');
-    let failCallback = client.address + client.interface.getSighash(client.interface.getFunction('failCallback')).replace('0x','');
+    let successCallback = encodeFunctionType(client, 'successCallback');
+    let failCallback = encodeFunctionType(client, 'failCallback');
 
     let questionKey = await client._seedToInitialStateHash(seed);
 
@@ -205,8 +205,8 @@ describe('EMO', function () {
       "nums": [1, 2, 3, 4, 5]
     };
 
-    let successCallback = client.address + client.interface.getSighash(client.interface.getFunction('successCallback')).replace('0x','');
-    let failCallback = client.address + client.interface.getSighash(client.interface.getFunction('failCallback')).replace('0x','');
+    let successCallback = encodeFunctionType(client, 'successCallback');
+    let failCallback = encodeFunctionType(client, 'failCallback');
 
     let questionKey = await client._seedToInitialStateHash(seed);
 
@@ -295,8 +295,8 @@ describe('EMO', function () {
       "sum": sum
     };
 
-    let successCallback = client.address + client.interface.getSighash(client.interface.getFunction('successCallback')).replace('0x','');
-    let failCallback = client.address + client.interface.getSighash(client.interface.getFunction('failCallback')).replace('0x','');
+    let successCallback = encodeFunctionType(client, 'successCallback');
+    let failCallback = encodeFunctionType(client, 'failCallback');
 
     let questionKey = await client._seedToInitialStateHash(seed);
 
@@ -465,8 +465,8 @@ describe('EMO', function () {
       "sum": sum
     };
 
-    let successCallback = client.address + client.interface.getSighash(client.interface.getFunction('successCallback')).replace('0x','');
-    let failCallback = client.address + client.interface.getSighash(client.interface.getFunction('failCallback')).replace('0x','');
+    let successCallback = encodeFunctionType(client, 'successCallback');
+    let failCallback = encodeFunctionType(client, 'failCallback');
 
     let questionKey = await client._seedToInitialStateHash(seed);
 
