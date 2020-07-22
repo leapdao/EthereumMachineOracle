@@ -7,9 +7,10 @@ const ethers = require("ethers");
 use(solidity);
 
 const machine = process.env.MACHINE || "Machine.template.sol";
+const clientDefaultTimeout = 6;
 
 const fixture = async (provider, [wallet]) => {
-  const contracts = await deploy(wallet, "temp/" + machine, 6)();
+  const contracts = await deploy(wallet, "temp/" + machine, clientDefaultTimeout)();
   return contracts;
 }
 
@@ -158,9 +159,9 @@ describe('EMO', function () {
   ]
   ]
   */
-    expect('ask').to.be.calledOnContractWith(oracle, [seed, 6, successCallback, failCallback]);
+    expect('ask').to.be.calledOnContractWith(oracle, [seed, clientDefaultTimeout, successCallback, failCallback]);
 
-    await checkNewQuestionInOracle(oracle, questionKey, 6, successCallback, failCallback);
+    await checkNewQuestionInOracle(oracle, questionKey, clientDefaultTimeout, successCallback, failCallback);
 
   /*
     let b = await oracle.queryFilter(oracle.filters.NewQuestion());
@@ -227,6 +228,12 @@ describe('EMO', function () {
     const [machine, merkle, oracle, court, client] = await loadFixture(fixture);
     const wallets = await client.provider.getWallets();
 
+    // In this case (not calling answer function) we are able to set defaultTimeout as 1 sec
+    await client.setTimeout(1);
+    expect('setTimeout').to.be.calledOnContractWith(client, [1]);
+    let res = await client.defaultTimeout();
+    expect(res).to.equal(1);
+
     // Actors
     const asker = wallets[1];
     const resolver = wallets[2];
@@ -247,12 +254,12 @@ describe('EMO', function () {
     await expect(client.connect(asker).askOracle(seed))
       .to.emit(oracle, 'NewQuestion')
       //.withArgs(questionKey, seed, asker);
-    expect('ask').to.be.calledOnContractWith(oracle, [seed, 6, successCallback, failCallback]);
+    expect('ask').to.be.calledOnContractWith(oracle, [seed, 1, successCallback, failCallback]);
 
     // Check that new question is in Oracle storage
     question = await oracle.questions(questionKey);
     let askTime = question[0];
-    await checkNewQuestionInOracle(oracle, questionKey, 6, successCallback, failCallback);
+    await checkNewQuestionInOracle(oracle, questionKey, 1, successCallback, failCallback);
 
     // Due to EMOClient contract first and second call failCallback will retry to ask the question again
     async function attemptToResolveFailWithClientRetry() {
@@ -263,7 +270,7 @@ describe('EMO', function () {
         .to.emit(oracle, 'NewQuestion');
         //.withArgs(questionKey, seed, asker); // for this stuff i need a function that
       expect('failCallback').to.be.calledOnContractWith(client, [questionKey]);
-      expect('ask').to.be.calledOnContractWith(oracle, [seed, 6, successCallback, failCallback]);
+      expect('ask').to.be.calledOnContractWith(oracle, [seed, 1, successCallback, failCallback]);
     }
 
     // Try to resolve with fail (first attempt)
@@ -272,7 +279,7 @@ describe('EMO', function () {
     await handleOracleTiming(oracle, questionKey, 2);
     await attemptToResolveFailWithClientRetry();
     // Check sideeffects after first attempt
-    let res = await client.timesRetried(questionKey);
+    res = await client.timesRetried(questionKey);
     expect(res, "Should be one time retried.").to.equal(1);
     res = await client.failed(questionKey);
     expect(res, "Shouldn't be failed at this moment.").to.be.false;
@@ -351,12 +358,12 @@ describe('EMO', function () {
       .to.emit(oracle, 'NewQuestion')
       //.withArgs(questionKey, seed, asker);
 
-    expect('ask').to.be.calledOnContractWith(oracle, [seed, 6, successCallback, failCallback]);
+    expect('ask').to.be.calledOnContractWith(oracle, [seed, clientDefaultTimeout, successCallback, failCallback]);
 
     // Check that new question is in Oracle storage
     question = await oracle.questions(questionKey);
     let askTime = question[0];
-    await checkNewQuestionInOracle(oracle, questionKey, 6, successCallback, failCallback);
+    await checkNewQuestionInOracle(oracle, questionKey, clientDefaultTimeout, successCallback, failCallback);
 
     // Receive imageHashes for two answers (one is correct, another one is wrong)
     let imageHash1 = await client.imageHashForExampleMachine(image);
@@ -438,7 +445,7 @@ describe('EMO', function () {
         .to.emit(oracle, 'NewQuestion');
         //.withArgs(questionKey, seed, asker); // for this stuff i need a function that
       expect('failCallback').to.be.calledOnContractWith(client, [questionKey]);
-      expect('ask').to.be.calledOnContractWith(oracle, [seed, 6, successCallback, failCallback]);
+      expect('ask').to.be.calledOnContractWith(oracle, [seed, clientDefaultTimeout, successCallback, failCallback]);
       // Check that new question appears in a Oracle contract storage with different askTime
       question = await oracle.questions(questionKey);
       let askTimeNew = question[0];
@@ -538,12 +545,12 @@ describe('EMO', function () {
       .to.emit(oracle, 'NewQuestion')
       //.withArgs(questionKey, seed, asker);
 
-    expect('ask').to.be.calledOnContractWith(oracle, [seed, 6, successCallback, failCallback]);
+    expect('ask').to.be.calledOnContractWith(oracle, [seed, clientDefaultTimeout, successCallback, failCallback]);
 
     // Check that new question is in Oracle storage
     question = await oracle.questions(questionKey);
     let askTime = question[0];
-    await checkNewQuestionInOracle(oracle, questionKey, 6, successCallback, failCallback);
+    await checkNewQuestionInOracle(oracle, questionKey, clientDefaultTimeout, successCallback, failCallback);
 
     // Receive imageHashes for three answers (one is correct, anothers are wrong)
     let imageHash1 = await client.imageHashForExampleMachine(image);
