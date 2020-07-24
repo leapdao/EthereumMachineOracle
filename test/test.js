@@ -31,6 +31,36 @@ async function handleOracleTiming(oracle, questionKey, timeoutCount = 1) {
   let waitTime = askTime + timeout * timeoutCount - now;
   await sleep(waitTime);
 }
+// Block of helper functions for formatting structs to ethers Result
+const isEthersArray = (val) => {
+  const keys = Object.keys(val);
+  const nums = keys.filter(k => parseInt(k) === parseInt(k)).map(k => parseInt(k));
+  return nums.length * 2 === keys.length && keys.length > 0;
+}
+
+const arraifyAsEthers = (obj) => {
+  const arr = [];
+  let i = 0;
+  Object.keys(obj).forEach(key => {
+      const ret = isEthersArray(obj[key]) ? arraifyAsEthers(obj[key]) : obj[key];
+      arr[i.toString()] = ret;
+      arr[key] = ret;
+      i++;
+  });
+  turnAllToBigNum(arr);
+  return arr;
+}
+
+const turnAllToBigNum = (obj) => {
+  Object.keys(obj).forEach(key => {
+    const ele = obj[key];
+    if (typeof ele === 'object') {
+      turnAllToBigNum(ele);
+    } else if (parseInt(ele) === parseInt(ele)) {
+      obj[key] = ethers.BigNumber.from(ele);
+    }
+  });
+}
 // Function checks that there is no question in Oracle storage before ask is called
 async function checkNoQuestionBeforeAsk(oracle, questionKey) {
   let question = await oracle.questions(questionKey);
@@ -57,6 +87,16 @@ async function checkQuestionWasDeleted(oracle, questionKey) {
   expect(res[2]).to.equal(0, "numberOfUnfalsifiedAnswers should be default value.");
   expect(res[3]).to.equal('0x000000000000000000000000000000000000000000000000', "successCallback should be default value.");
   expect(res[4]).to.equal('0x000000000000000000000000000000000000000000000000', "failCallback should be default value.");
+}
+// Function to check NewQuestion events logs (temporary solution, waiting https://github.com/EthWorks/Waffle/issues/245)
+async function checkNewQuestionEventsLogs(oracle, client, questionKey, seed) {
+  let newQuestionEvents = await oracle.queryFilter(oracle.filters.NewQuestion());
+  for (let i = 0; i < newQuestionEvents.length; i++) {
+    let eventArgs = newQuestionEvents[i].args;
+    expect(eventArgs[0]).to.equal(questionKey);
+    expect(eventArgs[1]).to.deep.equal(arraifyAsEthers(seed)); // waffles chai matchers uses here equal
+    expect(eventArgs[2]).to.equal(client.address);
+  }
 }
 
 
@@ -140,33 +180,13 @@ describe('EMO', function () {
 
     // Ask question
     await expect(client.connect(asker).askOracle(seed))
-      .to.emit(oracle, 'NewQuestion')
-      //.withArgs(questionKey, testcase, asker); // for this stuff i need a function that works in ethers js to create an array object from seed js object like this [
-  /*
-  [
-    BigNumber { _hex: '0x01', _isBigNumber: true },
-    BigNumber { _hex: '0x02', _isBigNumber: true },
-    BigNumber { _hex: '0x03', _isBigNumber: true },
-    BigNumber { _hex: '0x04', _isBigNumber: true },
-    BigNumber { _hex: '0x05', _isBigNumber: true }
-  ],
-  nums: [
-    BigNumber { _hex: '0x01', _isBigNumber: true },
-    BigNumber { _hex: '0x02', _isBigNumber: true },
-    BigNumber { _hex: '0x03', _isBigNumber: true },
-    BigNumber { _hex: '0x04', _isBigNumber: true },
-    BigNumber { _hex: '0x05', _isBigNumber: true }
-  ]
-  ]
-  */
+      .to.emit(oracle, 'NewQuestion');
+      //.withArgs(questionKey, arraifyAsEthers(seed), client.address); // should be uncomment after https://github.com/EthWorks/Waffle/issues/245 will be resolved
+    await checkNewQuestionEventsLogs(oracle, client, questionKey, seed);
     expect('ask').to.be.calledOnContractWith(oracle, [seed, clientDefaultTimeout, successCallback, failCallback]);
 
     await checkNewQuestionInOracle(oracle, questionKey, clientDefaultTimeout, successCallback, failCallback);
 
-  /*
-    let b = await oracle.queryFilter(oracle.filters.NewQuestion());
-    console.log(b[0].args[1]);
-  */
     // Receive imageHash
     let imageHash = await client.imageHashForExampleMachine(image);
 
@@ -196,11 +216,13 @@ describe('EMO', function () {
     // Resolve with success
     await expect(oracle.connect(resolver).resolveSuccess(imageHash, image))
       .to.emit(oracle, 'QuestionResolvedSuccessfully');
-      //.withArgs(questionKey, image.sum.toString()); // the same case as previously
-  /*
-    let b = await oracle.queryFilter(oracle.filters.QuestionResolvedSuccessfully());
-    console.log(b[0].args);
-  */
+      //.withArgs(questionKey, arraifyAsEthers(image)); // the same case as previously
+    // temporary checking logs
+    let questionResolvedSuccessfullyEvents = await oracle.queryFilter(oracle.filters.QuestionResolvedSuccessfully());
+    eventArgs = questionResolvedSuccessfullyEvents[0].args;
+    expect(eventArgs[0]).to.equal(questionKey);
+    expect(eventArgs[1]).to.eql(arraifyAsEthers(image));
+
     // Check stogare effects (answer was deleted, question was deleted)
     res = await oracle.getAnswer(imageHash);
     expect('getAnswer').to.be.calledOnContractWith(oracle, [imageHash]);
@@ -253,7 +275,8 @@ describe('EMO', function () {
     // Ask question
     await expect(client.connect(asker).askOracle(seed))
       .to.emit(oracle, 'NewQuestion')
-      //.withArgs(questionKey, seed, asker);
+      //.withArgs(questionKey, arrayifyAsEthers(seed), client.address);
+    await checkNewQuestionEventsLogs(oracle, client, questionKey, seed);
     expect('ask').to.be.calledOnContractWith(oracle, [seed, 1, successCallback, failCallback]);
 
     // Check that new question is in Oracle storage
@@ -268,7 +291,8 @@ describe('EMO', function () {
         .to.emit(oracle, 'QuestionResolvedUnsuccessfully')
         .withArgs(questionKey)
         .to.emit(oracle, 'NewQuestion');
-        //.withArgs(questionKey, seed, asker); // for this stuff i need a function that
+        //.withArgs(questionKey, arrayifyAsEthers(seed), client.address);
+      await checkNewQuestionEventsLogs(oracle, client, questionKey, seed);
       expect('failCallback').to.be.calledOnContractWith(client, [questionKey]);
       expect('ask').to.be.calledOnContractWith(oracle, [seed, 1, successCallback, failCallback]);
     }
@@ -356,7 +380,8 @@ describe('EMO', function () {
     // Ask question
     await expect(client.connect(asker).askOracle(seed))
       .to.emit(oracle, 'NewQuestion')
-      //.withArgs(questionKey, seed, asker);
+      //.withArgs(questionKey, arraifyAsEthers(seed), client.address);
+    await checkNewQuestionEventsLogs(oracle, client, questionKey, seed);
 
     expect('ask').to.be.calledOnContractWith(oracle, [seed, clientDefaultTimeout, successCallback, failCallback]);
 
@@ -389,7 +414,6 @@ describe('EMO', function () {
       expect(res[2]).to.equal(questionKey, 'questionKey should match.');
       question = await oracle.questions(questionKey);
       expect(question[2]).to.equal(1, "numberOfUnfalsifiedAnswers should increase.");
-
 
       // Give second answer (incorrect)
       let answerer2BalanceInitial = await answerer2.getBalance();
@@ -443,7 +467,8 @@ describe('EMO', function () {
         .to.emit(oracle, 'QuestionResolvedUnsuccessfully')
         .withArgs(questionKey)
         .to.emit(oracle, 'NewQuestion');
-        //.withArgs(questionKey, seed, asker); // for this stuff i need a function that
+        //.withArgs(questionKey, arraifyAsEthers(seed), client.address);
+      await checkNewQuestionEventsLogs(oracle, client, questionKey, seed);
       expect('failCallback').to.be.calledOnContractWith(client, [questionKey]);
       expect('ask').to.be.calledOnContractWith(oracle, [seed, clientDefaultTimeout, successCallback, failCallback]);
       // Check that new question appears in a Oracle contract storage with different askTime
@@ -543,7 +568,8 @@ describe('EMO', function () {
     // Ask question
     await expect(client.connect(asker).askOracle(seed))
       .to.emit(oracle, 'NewQuestion')
-      //.withArgs(questionKey, seed, asker);
+      //.withArgs(questionKey, arraifyAsEthers(seed), client.address);
+    await checkNewQuestionEventsLogs(oracle, client, questionKey, seed);
 
     expect('ask').to.be.calledOnContractWith(oracle, [seed, clientDefaultTimeout, successCallback, failCallback]);
 
@@ -645,7 +671,12 @@ describe('EMO', function () {
     // Resolve with success
     await expect(oracle.connect(resolver).resolveSuccess(imageHash1, image))
       .to.emit(oracle, 'QuestionResolvedSuccessfully');
-      //.withArgs(questionKey, image.sum.toString()); // the same case as previously
+      //.withArgs(questionKey, arraifyAsEthers(image));
+    // temporary checking logs
+    let questionResolvedSuccessfullyEvents = await oracle.queryFilter(oracle.filters.QuestionResolvedSuccessfully());
+    eventArgs = questionResolvedSuccessfullyEvents[0].args;
+    expect(eventArgs[0]).to.equal(questionKey);
+    expect(eventArgs[1]).to.eql(arraifyAsEthers(image));
     // Check storage effects
     // Check answer was deleted
     res = await oracle.getAnswer(imageHash1);
