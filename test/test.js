@@ -31,7 +31,7 @@ async function handleOracleTiming(oracle, questionKey, timeoutCount = 1) {
   let waitTime = askTime + timeout * timeoutCount - now;
   await sleep(waitTime);
 }
-// Block of helper functions for formatting structs to ethers Result
+// Block of helper functions for formatting structs to ethers Result (maybe we should have EMO utils)
 const isEthersArray = (val) => {
   const keys = Object.keys(val);
   const nums = keys.filter(k => parseInt(k) === parseInt(k)).map(k => parseInt(k));
@@ -61,46 +61,71 @@ const turnAllToBigNum = (obj) => {
     }
   });
 }
-// Function checks that there is no question in Oracle storage before ask is called
-async function checkNoQuestionBeforeAsk(oracle, questionKey) {
-  let question = await oracle.questions(questionKey);
-  expect(question[0]).to.equal(0, "askTime should be default value.");
-  expect(question[1]).to.equal(0, "timeout should be default value.");
-  expect(question[2]).to.equal(0, "numberOfUnfalsifiedAnswers should be default value.");
-  expect(question[3]).to.equal('0x000000000000000000000000000000000000000000000000', "successCallback should be default value.");
-  expect(question[4]).to.equal('0x000000000000000000000000000000000000000000000000', "failCallback should be default value.");
-}
-// Function checks that new question is in Oracle storage
-async function checkNewQuestionInOracle(oracle, questionKey, defaultTimeout, successCallback, failCallback) {
-  let question = await oracle.questions(questionKey);
-  expect(question[1]).to.equal(defaultTimeout, "timeout should be defaultTimeout.");
-  expect(question[2]).to.equal(0, "numberOfUnfalsifiedAnswers should be default value.");
-  expect(question[3]).to.equal(successCallback.toLowerCase(), "successCallback should be client function.");
-  expect(question[4]).to.equal(failCallback.toLowerCase(), "failCallback should be client function.");
-}
-// Function checks that question was deleted from Oracle storage
-async function checkQuestionWasDeleted(oracle, questionKey) {
-  let res = await oracle.questions(questionKey);
-  expect('questions').to.be.calledOnContractWith(oracle, [questionKey]);
-  expect(res[0]).to.equal(0, 'askTime should be default value.');
-  expect(res[1]).to.equal(0, 'timeout should be default value.');
-  expect(res[2]).to.equal(0, "numberOfUnfalsifiedAnswers should be default value.");
-  expect(res[3]).to.equal('0x000000000000000000000000000000000000000000000000', "successCallback should be default value.");
-  expect(res[4]).to.equal('0x000000000000000000000000000000000000000000000000', "failCallback should be default value.");
-}
-// Function to check NewQuestion events logs (temporary solution, waiting https://github.com/EthWorks/Waffle/issues/245)
-async function checkNewQuestionEventsLogs(oracle, client, questionKey, seed) {
-  let newQuestionEvents = await oracle.queryFilter(oracle.filters.NewQuestion());
-  for (let i = 0; i < newQuestionEvents.length; i++) {
-    let eventArgs = newQuestionEvents[i].args;
-    expect(eventArgs[0]).to.equal(questionKey);
-    expect(eventArgs[1]).to.deep.equal(arraifyAsEthers(seed)); // waffles chai matchers uses here equal
-    expect(eventArgs[2]).to.equal(client.address);
-  }
-}
 
 
 describe('EMO', function () {
+  // Function checks that there is no question in Oracle storage before ask is called
+  async function checkNoQuestionBeforeAsk(oracle, questionKey) {
+    let question = await oracle.questions(questionKey);
+    expect(question[0]).to.equal(0, "askTime should be default value.");
+    expect(question[1]).to.equal(0, "timeout should be default value.");
+    expect(question[2]).to.equal(0, "numberOfUnfalsifiedAnswers should be default value.");
+    expect(question[3]).to.equal('0x000000000000000000000000000000000000000000000000', "successCallback should be default value.");
+    expect(question[4]).to.equal('0x000000000000000000000000000000000000000000000000', "failCallback should be default value.");
+  }
+  // Function checks that new question is in Oracle storage
+  async function checkNewQuestionInOracle(oracle, questionKey, defaultTimeout, successCallback, failCallback) {
+    let question = await oracle.questions(questionKey);
+    expect(question[1]).to.equal(defaultTimeout, "timeout should be defaultTimeout.");
+    expect(question[2]).to.equal(0, "numberOfUnfalsifiedAnswers should be default value.");
+    expect(question[3]).to.equal(successCallback.toLowerCase(), "successCallback should be client function.");
+    expect(question[4]).to.equal(failCallback.toLowerCase(), "failCallback should be client function.");
+  }
+  // Function checks that question was deleted from Oracle storage
+  async function checkQuestionWasDeleted(oracle, questionKey) {
+    let res = await oracle.questions(questionKey);
+    expect('questions').to.be.calledOnContractWith(oracle, [questionKey]);
+    expect(res[0]).to.equal(0, 'askTime should be default value.');
+    expect(res[1]).to.equal(0, 'timeout should be default value.');
+    expect(res[2]).to.equal(0, "numberOfUnfalsifiedAnswers should be default value.");
+    expect(res[3]).to.equal('0x000000000000000000000000000000000000000000000000', "successCallback should be default value.");
+    expect(res[4]).to.equal('0x000000000000000000000000000000000000000000000000', "failCallback should be default value.");
+  }
+  //Due to EMOClient contract first and second call failCallback will retry to ask the question again
+  async function attemptToResolveFailWithClientRetry(oracle, client, resolver, questionKey, seed, clientDefaultTimeout, successCallback, failCallback, askTime) {
+    // Resolve with fail
+    await expect(oracle.connect(resolver).resolveFail(questionKey))
+      .to.emit(oracle, 'QuestionResolvedUnsuccessfully')
+      .withArgs(questionKey)
+      .to.emit(oracle, 'NewQuestion');
+      //.withArgs(questionKey, arraifyAsEthers(seed), client.address);
+    await checkNewQuestionEventsLogs(oracle, client, questionKey, seed);
+    expect('failCallback').to.be.calledOnContractWith(client, [questionKey]);
+    expect('ask').to.be.calledOnContractWith(oracle, [seed, clientDefaultTimeout, successCallback, failCallback]);
+    // Check that new question appears in a Oracle contract storage with different askTime
+    question = await oracle.questions(questionKey);
+    let askTimeNew = question[0];
+    expect(askTimeNew > askTime, "Should be new question with another askTime.").to.be.true;
+    return askTimeNew;
+  }
+  // Function to check Answer was deleted from Oracle storage
+  async function checkAnswerWasDeleted(oracle, imageHash) {
+    let res = await oracle.getAnswer(imageHash);
+    expect('getAnswer').to.be.calledOnContractWith(oracle, [imageHash]);
+    expect(res[0]).to.equal("0x0000000000000000000000000000000000000000", 'Answerer should be deleted.');
+    expect(res[1]).to.equal(0, 'Index in question member answerKeys array should be 0.');
+    expect(res[2]).to.equal("0x0000000000000000000000000000000000000000000000000000000000000000", 'questionKey should be deleted.');
+  }
+  // Function to check NewQuestion events logs (temporary solution, waiting https://github.com/EthWorks/Waffle/issues/245)
+  async function checkNewQuestionEventsLogs(oracle, client, questionKey, seed) {
+    let newQuestionEvents = await oracle.queryFilter(oracle.filters.NewQuestion());
+    for (let i = 0; i < newQuestionEvents.length; i++) {
+      let eventArgs = newQuestionEvents[i].args;
+      expect(eventArgs[0]).to.equal(questionKey);
+      expect(eventArgs[1]).to.deep.equal(arraifyAsEthers(seed)); // waffles chai matchers uses here equal
+      expect(eventArgs[2]).to.equal(client.address);
+    }
+  }
 
   this.timeout(0);
 
@@ -224,11 +249,7 @@ describe('EMO', function () {
     expect(eventArgs[1]).to.eql(arraifyAsEthers(image));
 
     // Check stogare effects (answer was deleted, question was deleted)
-    res = await oracle.getAnswer(imageHash);
-    expect('getAnswer').to.be.calledOnContractWith(oracle, [imageHash]);
-    expect(res[0]).to.equal("0x0000000000000000000000000000000000000000", 'Answerer should be deleted.');
-    expect(res[1]).to.equal(0, 'Index in question member answerKeys array should be 0.');
-    expect(res[2]).to.equal("0x0000000000000000000000000000000000000000000000000000000000000000", 'questionKey should be deleted.');
+    await checkAnswerWasDeleted(oracle, imageHash);
     await checkQuestionWasDeleted(oracle, questionKey);
 
     // Check answerer balance changes
@@ -284,47 +305,18 @@ describe('EMO', function () {
     let askTime = question[0];
     await checkNewQuestionInOracle(oracle, questionKey, 1, successCallback, failCallback);
 
-    // Due to EMOClient contract first and second call failCallback will retry to ask the question again
-    async function attemptToResolveFailWithClientRetry() {
-      // Resolve with fail
+    // Try to resolve with fail (two attempts, due to client settings)
+    for (let i = 1; i < 3; i++) {
       await expect(oracle.connect(resolver).resolveFail(questionKey))
-        .to.emit(oracle, 'QuestionResolvedUnsuccessfully')
-        .withArgs(questionKey)
-        .to.emit(oracle, 'NewQuestion');
-        //.withArgs(questionKey, arrayifyAsEthers(seed), client.address);
-      await checkNewQuestionEventsLogs(oracle, client, questionKey, seed);
-      expect('failCallback').to.be.calledOnContractWith(client, [questionKey]);
-      expect('ask').to.be.calledOnContractWith(oracle, [seed, 1, successCallback, failCallback]);
+        .to.be.revertedWith('It is not the time to give up yet.');
+      await handleOracleTiming(oracle, questionKey, 2);
+      askTime = await attemptToResolveFailWithClientRetry(oracle, client, resolver, questionKey, seed, clientDefaultTimeout, successCallback, failCallback, askTime);
+      // Check sideeffects after attempt
+      res = await client.timesRetried(questionKey);
+      expect(res, "Should be " + i + " time retried.").to.equal(i);
+      res = await client.failed(questionKey);
+      expect(res, "Shouldn't be failed at this moment.").to.be.false;
     }
-
-    // Try to resolve with fail (first attempt)
-    await expect(oracle.connect(resolver).resolveFail(questionKey))
-      .to.be.revertedWith('It is not the time to give up yet.');
-    await handleOracleTiming(oracle, questionKey, 2);
-    await attemptToResolveFailWithClientRetry();
-    // Check sideeffects after first attempt
-    res = await client.timesRetried(questionKey);
-    expect(res, "Should be one time retried.").to.equal(1);
-    res = await client.failed(questionKey);
-    expect(res, "Shouldn't be failed at this moment.").to.be.false;
-    // Check that new question appears in a Oracle contract storage with different askTime
-    question = await oracle.questions(questionKey);
-    let askTime1 = question[0];
-    expect(askTime1 > askTime, "Should be new question with another askTime.").to.be.true;
-    // Try to resolve with fail (second attempt)
-    await expect(oracle.connect(resolver).resolveFail(questionKey))
-      .to.be.revertedWith('It is not the time to give up yet.');
-    await handleOracleTiming(oracle, questionKey, 2);
-    await attemptToResolveFailWithClientRetry();
-    // Check sideeffects after second attempt
-    res = await client.timesRetried(questionKey);
-    expect(res, "Should be two times retried.").to.equal(2);
-    res = await client.failed(questionKey);
-    expect(res, "Shouldn't be failed at this moment.").to.be.false;
-    // Check that new question appears in a Oracle contract storage with different askTime
-    question = await oracle.questions(questionKey);
-    let askTime2 = question[0];
-    expect(askTime2 > askTime1, "Should be new question with another askTime.").to.be.true;
 
     // Finally resolve with fail
     await expect(oracle.connect(resolver).resolveFail(questionKey))
@@ -438,14 +430,8 @@ describe('EMO', function () {
 
     async function checkAnswerDeletedAndStake(attemptValue) {
       // Check that answers was deleted and the stakes are still in Oracle
-      let res = await oracle.getAnswer(imageHash1);
-      expect(res[0], 'Answerer1 should be deleted.').to.equal("0x0000000000000000000000000000000000000000");
-      expect(res[1], 'Index in question member answerKeys array should be 0.').to.equal(0);
-      expect(res[2], 'questionKey should be deleted.').to.equal("0x0000000000000000000000000000000000000000000000000000000000000000");
-      res = await oracle.getAnswer(imageHash2);
-      expect(res[0], 'Answerer2 should be deleted.').to.equal("0x0000000000000000000000000000000000000000");
-      expect(res[1], 'Index in question member answerKeys array should be 0.').to.equal(0);
-      expect(res[2], 'questionKey should be deleted.').to.equal("0x0000000000000000000000000000000000000000000000000000000000000000");
+      await checkAnswerWasDeleted(oracle, imageHash1);
+      await checkAnswerWasDeleted(oracle, imageHash2);
       res = await oracle.provider.getBalance(oracle.address);
       expect(res, "Stakes from two answers two times should be in Oracle contract.").to.equal(stake_size.mul(attemptValue));
       question = await oracle.questions(questionKey);
@@ -459,56 +445,22 @@ describe('EMO', function () {
 
     let balancesAfterAnswers = await giveTwoAnswers();
 
-    // TODO: REWRITE this with global function
-    //Due to EMOClient contract first and second call failCallback will retry to ask the question again
-    async function attemptToResolveFailWithClientRetry() {
-      // Resolve with fail
+    // Try to resolve with fail (two attempts, due to client settings)
+    for (let i = 1; i < 3; i++) {
       await expect(oracle.connect(resolver).resolveFail(questionKey))
-        .to.emit(oracle, 'QuestionResolvedUnsuccessfully')
-        .withArgs(questionKey)
-        .to.emit(oracle, 'NewQuestion');
-        //.withArgs(questionKey, arraifyAsEthers(seed), client.address);
-      await checkNewQuestionEventsLogs(oracle, client, questionKey, seed);
-      expect('failCallback').to.be.calledOnContractWith(client, [questionKey]);
-      expect('ask').to.be.calledOnContractWith(oracle, [seed, clientDefaultTimeout, successCallback, failCallback]);
-      // Check that new question appears in a Oracle contract storage with different askTime
-      question = await oracle.questions(questionKey);
-      let askTimeNew = question[0];
-      expect(askTimeNew > askTime, "Should be new question with another askTime.").to.be.true;
-      askTime = askTimeNew;
+        .to.be.revertedWith('Fuck.It is not the time to give up yet.');
+      await handleOracleTiming(oracle, questionKey, 2);
+      askTime = await attemptToResolveFailWithClientRetry(oracle, client, resolver, questionKey, seed, clientDefaultTimeout, successCallback, failCallback, askTime);
+      // Check sideeffects
+      let res = await client.timesRetried(questionKey);
+      expect(res, "Should be " + i + " time retried.").to.equal(i);
+      res = await client.failed(questionKey);
+      expect(res, "Shouldn't be failed at this moment.").to.be.false;
+      await checkAnswerDeletedAndStake(2 * i);
+
+      // failCallback retries to ask the question one more time, give answers one more time
+      balancesAfterAnswers = await giveTwoAnswers();
     }
-    // TODO: do the below in a loop
-    // Try to resolve with fail (first attempt)
-    await expect(oracle.connect(resolver).resolveFail(questionKey))
-      .to.be.revertedWith('Fuck.It is not the time to give up yet.');
-    await handleOracleTiming(oracle, questionKey, 2);
-
-    await attemptToResolveFailWithClientRetry();
-    // Check sideeffects
-    let res = await client.timesRetried(questionKey);
-    expect(res, "Should be one time retried.").to.equal(1);
-    res = await client.failed(questionKey);
-    expect(res, "Shouldn't be failed at this moment.").to.be.false;
-    await checkAnswerDeletedAndStake(2);
-
-    // failCallback retries to ask the question one more time, give answers one more time
-    balancesAfterAnswers = await giveTwoAnswers();
-
-    // Try to resolve with fail (second attempt)
-    await expect(oracle.connect(resolver).resolveFail(questionKey))
-      .to.be.revertedWith('Fuck.It is not the time to give up yet.');
-    await handleOracleTiming(oracle, questionKey, 2);
-
-    await attemptToResolveFailWithClientRetry();
-    // Check sideeffects
-    res = await client.timesRetried(questionKey);
-    expect(res, "Should be one time retried.").to.equal(2);
-    res = await client.failed(questionKey);
-    expect(res, "Shouldn't be failed at this moment.").to.be.false;
-    await checkAnswerDeletedAndStake(4);
-
-    // failCallback retries to ask the question one more time, give answers one more time
-    balancesAfterAnswers = await giveTwoAnswers();
 
     // Finally resolve with fail
     await expect(oracle.connect(resolver).resolveFail(questionKey))
@@ -576,6 +528,7 @@ describe('EMO', function () {
     // Check that new question is in Oracle storage
     question = await oracle.questions(questionKey);
     let askTime = question[0];
+    let numberOfUnfalsifiedAnswersInitial = parseInt(question[2]);
     await checkNewQuestionInOracle(oracle, questionKey, clientDefaultTimeout, successCallback, failCallback);
 
     // Receive imageHashes for three answers (one is correct, anothers are wrong)
@@ -634,6 +587,9 @@ describe('EMO', function () {
     expect(res[1]).to.equal(2, 'Index in question member answerKeys array should be 2.');
     expect(res[2]).to.equal(questionKey, 'questionKey should match.');
 
+    question = await oracle.questions(questionKey);
+    expect(numberOfUnfalsifiedAnswersInitial + 3, "Should be three unfalsified answers.").to.equal(question[2]);
+
     // Falsify 2 answers
     let prosecutorBalanceInitial = await prosecutor.getBalance();
     await expect(oracle.falsify(imageHash2, prosecutor.address))
@@ -642,27 +598,21 @@ describe('EMO', function () {
 
     let prosecutorBalanceAfterFalsify1 = await prosecutor.getBalance();
     expect(prosecutorBalanceAfterFalsify1.sub(prosecutorBalanceInitial), "Prosecutor should receive stake.").to.equal(stake_size);
-    // here we can check question numberOfUnfalsifiedAnswers and question answerKeys
-    // Check answer was deleted
-    res = await oracle.getAnswer(imageHash2);
-    expect('getAnswer').to.be.calledOnContractWith(oracle, [imageHash2]);
-    expect(res[0]).to.equal("0x0000000000000000000000000000000000000000", 'Answerer2 should be deleted.');
-    expect(res[1]).to.equal(0, 'Index in question member answerKeys array should be 0.');
-    expect(res[2]).to.equal("0x0000000000000000000000000000000000000000000000000000000000000000", 'questionKey should be deleted.');
-
+    question = await oracle.questions(questionKey);
+    expect(numberOfUnfalsifiedAnswersInitial + 2, "Should be two unfalsified answers.").to.equal(question[2]);
+    // Check answer2 was deleted
+    await checkAnswerWasDeleted(oracle, imageHash2);
     await expect(oracle.falsify(imageHash3, prosecutor.address))
       .to.emit(oracle, 'AnswerFalsified')
       .withArgs(questionKey, imageHash3);
 
     let prosecutorBalanceAfterFalsify2 = await prosecutor.getBalance();
     expect(prosecutorBalanceAfterFalsify2.sub(prosecutorBalanceAfterFalsify1), "Prosecutor should receive stake.").to.equal(stake_size);
+    question = await oracle.questions(questionKey);
+    expect(numberOfUnfalsifiedAnswersInitial + 1, "Should be one unfalsified answers.").to.equal(question[2]);
 
-    // Check answer was deleted
-    res = await oracle.getAnswer(imageHash3);
-    expect('getAnswer').to.be.calledOnContractWith(oracle, [imageHash3]);
-    expect(res[0]).to.equal("0x0000000000000000000000000000000000000000", 'Answerer3 should be deleted.');
-    expect(res[1]).to.equal(0, 'Index in question member answerKeys array should be 0.');
-    expect(res[2]).to.equal("0x0000000000000000000000000000000000000000000000000000000000000000", 'questionKey should be deleted.');
+    // Check answer3 was deleted
+    await checkAnswerWasDeleted(oracle, imageHash3);
 
     await expect(oracle.connect(resolver).resolveSuccess(imageHash1, image))
       .to.be.revertedWith('Fuck.Answering is still in progress.');
@@ -678,13 +628,8 @@ describe('EMO', function () {
     expect(eventArgs[0]).to.equal(questionKey);
     expect(eventArgs[1]).to.eql(arraifyAsEthers(image));
     // Check storage effects
-    // Check answer was deleted
-    res = await oracle.getAnswer(imageHash1);
-    expect('getAnswer').to.be.calledOnContractWith(oracle, [imageHash1]);
-    expect(res[0]).to.equal("0x0000000000000000000000000000000000000000", 'Answerer1 should be deleted.');
-    expect(res[1]).to.equal(0, 'Index in question member answerKeys array should be 0.');
-    expect(res[2]).to.equal("0x0000000000000000000000000000000000000000000000000000000000000000", 'questionKey should be deleted.');
-
+    // Check answer1 was deleted
+    await checkAnswerWasDeleted(oracle, imageHash1);
     // Check question was deleted
     await checkQuestionWasDeleted(oracle, questionKey);
     // Check answerer balance changes
