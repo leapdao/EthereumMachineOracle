@@ -645,4 +645,177 @@ describe('EMO', function () {
     expect(res[0], 'Image should match.').to.equal(image.sum.toString());
   });
 
+  it('Should revert in all requirement statements that returns false', async () => {
+    const [machine, merkle, oracle, court, client] = await loadFixture(fixture);
+    const wallets = await client.provider.getWallets();
+    let _court = await oracle.court();
+    expect(_court).to.equal(wallets[0].address);
+
+    // Actors
+    const asker = wallets[1];
+    const answerer = wallets[2];
+    const resolver = wallets[3];
+    const prosecutor = wallets[4];
+
+    // Inputs
+    const seed = {
+      "nums": [1, 2, 3, 4, 5]
+    };
+
+    let sum = 0;
+    for (let i = 0; i < seed.nums.length; i++) {
+      sum += seed.nums[i];
+    }
+
+    let image = {
+      "sum": sum
+    };
+
+    // Receive imageHash
+    let imageHash = await client.imageHashForExampleMachine(image);
+    // Receive imageHash2
+    image.sum = 234;
+    let imageHash2 = await client.imageHashForExampleMachine(image);
+    image.sum = 15;
+
+    let successCallback = encodeFunctionType(client, 'successCallback');
+    let failCallback = encodeFunctionType(client, 'failCallback');
+
+    let questionKey = await client._seedToInitialStateHash(seed);
+
+    await checkNoQuestionBeforeAsk(oracle, questionKey);
+
+    // Case1. "Timeout must be greater then zero and be in overflow bounds."
+    // Testing1. Set up Client timeout to 0 and max 32 bytes value, both cases should revert.
+
+    // Set up Client timeout to '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+    await client.setTimeout('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff');
+    expect('setTimeout').to.be.calledOnContractWith(client, ['0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff']);
+    let res = await client.defaultTimeout();
+    expect(res).to.equal('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff');
+
+    // Ask oracle with timeout that causes overflow
+    await expect(client.connect(asker).askOracle(seed))
+      .to.be.revertedWith("Timeout must be greater then zero and be in overflow bounds.");
+
+    // Set up Client timeout to 0
+    await client.setTimeout(0);
+    expect('setTimeout').to.be.calledOnContractWith(client, [0]);
+    res = await client.defaultTimeout();
+    expect(res).to.equal(0);
+
+    // Ask oracle with timeout equals 0
+    await expect(client.connect(asker).askOracle(seed))
+      .to.be.revertedWith("Timeout must be greater then zero and be in overflow bounds.");
+
+    // Set up Client timeout back to 6 sec (clientDefaultTimeout)
+    await client.setTimeout(6);
+    expect('setTimeout').to.be.calledOnContractWith(client, [6]);
+    res = await client.defaultTimeout();
+    expect(res).to.equal(6);
+
+    // Case2. "Question does not exist."
+    // Testing2. Give answers with random questionKey and questionKey = 0.
+
+    await expect(oracle.connect(answerer).answer('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff', imageHash, {value: stake_size}))
+      .to.be.revertedWith("Question does not exist.");
+    await expect(oracle.connect(answerer).answer('0x0000000000000000000000000000000000000000000000000000000000000000', imageHash, {value: stake_size}))
+      .to.be.revertedWith("Question does not exist.");
+
+    // Case3. "The answer trying to be falsified does not exist or was already falsified."
+    // Testing3. Falsify random answer
+    await expect(oracle.falsify('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff', prosecutor.address))
+      .to.be.revertedWith("The answer trying to be falsified does not exist or was already falsified.");
+
+    // Case4. "Question and answer must exists."
+    // Testing4. resolve success with random answer
+    await expect(oracle.connect(resolver).resolveSuccess('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff', image))
+      .to.be.revertedWith("Question and answer must exists.");
+
+    // Case5. "Question must exist."
+    // Testing5. resolve fail with random questionKey
+    await expect(oracle.connect(resolver).resolveFail('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'))
+      .to.be.revertedWith("Question must exist.");
+
+    // Case6. "Question already exists."
+    // Testing6. ask oracle the same question two times
+    await expect(client.connect(asker).askOracle(seed))
+      .to.emit(oracle, 'NewQuestion');
+      //.withArgs(questionKey, arraifyAsEthers(seed), client.address); // should be uncomment after https://github.com/EthWorks/Waffle/issues/245 will be resolved
+    await checkNewQuestionEventsLogs(oracle, client, questionKey, seed);
+    expect('ask').to.be.calledOnContractWith(oracle, [seed, clientDefaultTimeout, successCallback, failCallback]);
+    await checkNewQuestionInOracle(oracle, questionKey, clientDefaultTimeout, successCallback, failCallback);
+
+    await expect(client.connect(asker).askOracle(seed))
+      .to.be.revertedWith("Question already exists.");
+
+    // Case7. "Not enough stake sent."
+    // Testing7. give answer without stake
+    await expect(oracle.connect(answerer).answer(questionKey, imageHash))
+      .to.be.revertedWith("Not enough stake sent.");
+
+    // Case8. "Answer already exists."
+    // Testing8. give the same answer two times
+    await expect(oracle.connect(answerer).answer(questionKey, imageHash, {value: stake_size}))
+      .to.emit(oracle, 'NewAnswer')
+      .withArgs(questionKey, imageHash);
+
+    await expect(oracle.connect(answerer).answer(questionKey, imageHash, {value: stake_size}))
+      .to.be.revertedWith("Answer already exists.");
+
+    // Case9. "Only court can falsify answers"
+    // Testing9. try to falsify from random address
+    await expect(oracle.connect(asker).falsify(imageHash, prosecutor.address))
+      .to.be.revertedWith("Only court can falsify answers");
+
+    // Case10. "Must be only one answer to resolve success."
+    // Testing10.  give two answers, resolve success
+    await expect(oracle.connect(answerer).answer(questionKey, imageHash2, {value: stake_size}))
+    await handleOracleTiming(oracle, questionKey);
+    await expect(oracle.connect(resolver).resolveSuccess(imageHash, image))
+      .to.be.revertedWith("Must be only one answer to resolve success.")
+
+    // Case11. "Image hash does not match answerKey."
+    // Testing11. resolve success with image another than in answer
+    image.sum = 234;
+    await expect(oracle.connect(resolver).resolveSuccess(imageHash, image))
+      .to.be.revertedWith("Image hash does not match answerKey.");
+    image.sum = 15;
+
+    // Case12. "There is not enough time left for submitting new answers to this question."
+    // Testint12. ask oracle with timeout = 2 sec, give answer
+    const seed2 = {
+      "nums": [5, 53, 32]
+    };
+    const image2 = {
+      "sum": 90
+    };
+    let imageHash3 = await client.imageHashForExampleMachine(image2);
+
+    let questionKey2 = await client._seedToInitialStateHash(seed2);
+    // Set up Client timeout to 2 sec
+    await client.setTimeout(2);
+    expect('setTimeout').to.be.calledOnContractWith(client, [2]);
+    res = await client.defaultTimeout();
+    expect(res).to.equal(2);
+
+    await expect(client.connect(asker).askOracle(seed2))
+      .to.emit(oracle, 'NewQuestion');
+      //.withArgs(questionKey2, arraifyAsEthers(seed), client.address); // should be uncomment after https://github.com/EthWorks/Waffle/issues/245 will be resolved
+    expect('ask').to.be.calledOnContractWith(oracle, [seed2, 2, successCallback, failCallback]);
+
+    await checkNewQuestionInOracle(oracle, questionKey2, 2, successCallback, failCallback);
+
+    await expect(oracle.connect(answerer).answer(questionKey2, imageHash3, {value: stake_size}))
+      .to.be.revertedWith("There is not enough time left for submitting new answers to this question.");
+  });
+
+  it('Should not allow payout by reentrancy with another successCallback implementation', async () => {
+    // TODO: another successCallback implementation for Client contract
+
+  });
+
+  it('Research absolute value of MAX_ANSWER_NUMBER', async () => {
+
+  });
 });
