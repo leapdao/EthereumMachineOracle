@@ -23,6 +23,9 @@
     "mocha": "^7.1.2"
   },
   "dependencies": {
+    "ethereumjs-abi": "^0.6.8",
+    "ethereumjs-util": "^7.0.3",
+    "ethereumjs-vm": "^4.2.0",
     "solidity-parser-antlr": "^0.4.11"
   }
 }
