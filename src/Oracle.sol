@@ -106,13 +106,6 @@ contract Oracle is IOracle {
     return questions[questionKey];
   }
 
-  function getQuestionTime(bytes32 questionKey) external view returns(uint, uint) {
-    Question memory question = questions[questionKey];
-    uint askTime = question.askTime;
-    uint timeout = question.timeout;
-    return (askTime, timeout);
-  }
-
   function getAnswer (
     bytes32 answerKey
   ) override external view returns (Answer memory)

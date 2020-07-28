@@ -24,6 +24,10 @@ contract EMOClient {
     defaultTimeout = _defaultTimeout;
   }
 
+  function setTimeout(uint _newTimeout) public {
+    defaultTimeout = _newTimeout;
+  }
+
   function askOracle(Machine.Seed memory _seed) public {
     require(!_isAlreadyImageForSeed(_seed), "There is already image for your seed, please call showImage instead.");
     bytes32 initialStateHash = _seedToInitialStateHash(_seed);
