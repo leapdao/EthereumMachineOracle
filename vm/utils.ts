@@ -41,7 +41,7 @@ async function deployContract(
     return deploymentResult.createdAddress!
 }
 
-async function executeCall(vm: VM, contractAddress: Buffer, caller: Buffer, data: Buffer) {
+async function executeContractCall(vm: VM, contractAddress: Buffer, caller: Buffer, data: Buffer) {
     const callResult = await vm.runCall({
         to: contractAddress,
         caller: caller,
@@ -96,6 +96,6 @@ export {
     getAccountNonce,
     deployContract,
     putAccount,
-    executeCall,
+    executeContractCall,
     ethersArrayToObject
 }

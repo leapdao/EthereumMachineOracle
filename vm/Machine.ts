@@ -1,5 +1,5 @@
 import { ContractFactory } from 'ethers';
-import { deployContract, putAccount, executeCall, ethersArrayToObject } from './utils';
+import { deployContract, putAccount, executeContractCall, ethersArrayToObject } from './utils';
 import { privateToAddress, bufferToHex, keccakFromString, toBuffer } from 'ethereumjs-util';
 import Account from 'ethereumjs-account';
 import VM from 'ethereumjs-vm';
@@ -52,15 +52,17 @@ class Machine {
     }
 
     async callFunc(funcName: string, arg: any) {
+        if (!this.machineAddress) await this.init();
         const funcFragment = this.machineContract.interface.getFunction(funcName);
         const params = this.machineContract.interface._encodeParams(funcFragment.inputs, [arg]);
         const encoded = toBuffer(selectors[funcName] + params.replace("0x", ""));
-        const result = await executeCall(this.vm, this.machineAddress, this.account, encoded);
+        const result = await executeContractCall(this.vm, this.machineAddress, this.account, encoded);
         const decoded = this.machineContract.interface.decodeFunctionResult(funcFragment, result);
         return decoded.map(ethersArrayToObject);
     }
 
     async run(seed: Seed): Promise<Image> {
+        if (!this.machineAddress) await this.init();
         let state = await this.create(seed);
         let isTerminal = await this.isTerminal(state);
 
@@ -73,33 +75,40 @@ class Machine {
     }
 
     async computeAnswer(seed: Seed): Promise<[Image, Bytes32]> {
+        if (!this.machineAddress) await this.init();
         const image = await this.run(seed);
         const imageHash = await this.imageHash(image);
         return [image, imageHash];
     }
 
     async create(seed: Seed): Promise<State> {
+        if (!this.machineAddress) await this.init();
         return (await this.callFunc("create", seed))[0];
     }
 
     async project(state: State): Promise<Image> {
+        if (!this.machineAddress) await this.init();
         return (await this.callFunc("project", state))[0];
     }
 
     async isTerminal(state: State): Promise<boolean> {
+        if (!this.machineAddress) await this.init();
         return (await this.callFunc("isTerminal", state))[0];
     }
 
     async next(state: State): Promise<[State, boolean]> {
+        if (!this.machineAddress) await this.init();
         const result = await this.callFunc("next", state);
         return [result[0], result[1]];
     }
 
     async stateHash(state: State): Promise<Bytes32> {
+        if (!this.machineAddress) await this.init();
         return (await this.callFunc("stateHash", state))[0];
     }
 
     async imageHash(image: Image): Promise<Bytes32> {
+        if (!this.machineAddress) await this.init();
         return (await this.callFunc("imageHash", image))[0];
     }
 }
