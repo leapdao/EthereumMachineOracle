@@ -67,6 +67,7 @@ describe('EMO', function () {
   // Function checks that there is no question in Oracle storage before ask is called
   async function checkNoQuestionBeforeAsk(oracle, questionKey) {
     let question = await oracle.questions(questionKey);
+    expect('questions').to.be.calledOnContractWith(oracle, [questionKey]);
     expect(question[0]).to.equal(0, "askTime should be default value.");
     expect(question[1]).to.equal(0, "timeout should be default value.");
     expect(question[2]).to.equal(0, "numberOfUnfalsifiedAnswers should be default value.");
@@ -83,13 +84,7 @@ describe('EMO', function () {
   }
   // Function checks that question was deleted from Oracle storage
   async function checkQuestionWasDeleted(oracle, questionKey) {
-    let res = await oracle.questions(questionKey);
-    expect('questions').to.be.calledOnContractWith(oracle, [questionKey]);
-    expect(res[0]).to.equal(0, 'askTime should be default value.');
-    expect(res[1]).to.equal(0, 'timeout should be default value.');
-    expect(res[2]).to.equal(0, "numberOfUnfalsifiedAnswers should be default value.");
-    expect(res[3]).to.equal('0x000000000000000000000000000000000000000000000000', "successCallback should be default value.");
-    expect(res[4]).to.equal('0x000000000000000000000000000000000000000000000000', "failCallback should be default value.");
+    await checkNoQuestionBeforeAsk(oracle, questionKey);
   }
   //Due to EMOClient contract first and second call failCallback will retry to ask the question again
   async function attemptToResolveFailWithClientRetry(oracle, client, resolver, questionKey, seed, clientDefaultTimeout, successCallback, failCallback, askTime) {
