@@ -15,11 +15,12 @@ interface IClaimVerifier {
     bytes32 imageHash;
     function(bytes32) external trueCallback;
     function(bytes32) external falseCallback;
+    function(bytes32) external payable defensePayoutCallback; 
   }
 
   event NewClaim (
     Machine.Seed seed,
-    Machine.Image image,
+    bytes32 imageHash,
     bytes32 claimKey
   );
 
@@ -42,11 +43,12 @@ interface IClaimVerifier {
   // only Client
   function makeClaim (
     Machine.Seed calldata seed,
-    Machine.Image calldata image,
+    bytes32 imageHash,
     bytes32 claimKey,
     uint timeout,
     function(bytes32) external trueCallback,
-    function(bytes32) external falseCallback
+    function(bytes32) external falseCallback,
+    function(bytes32) external payable payoutDefendant
   ) external payable;
 
   // only ClaimVerifier
@@ -79,14 +81,14 @@ contract ClaimVerifier is IClaimVerifier {
     return claims[claimKey];
   }
 
-  // use only imageHash instead of whole image?
   function makeClaim (
     Machine.Seed calldata seed,
-    Machine.Image calldata image,
+    bytes32 imageHash,
     bytes32 claimKey,
     uint timeout,
     function(bytes32) external trueCallback,
-    function(bytes32) external falseCallback
+    function(bytes32) external falseCallback,
+    function(bytes32) external payable defensePayoutCallback
   ) override external payable
   {
     Claim storage claim = claims[claimKey];
@@ -97,7 +99,6 @@ contract ClaimVerifier is IClaimVerifier {
     require(timeout > 0 && (2 * timeout) + now > (2 * timeout), "Timeout must be greater then zero and be in overflow bounds.");
 
     bytes32 initialStateHash = Machine.stateHash(Machine.create(seed));
-    bytes32 imageHash = Machine.imageHash(image);
     
     claim.claimTime = now;
     claim.timeout = timeout;
@@ -106,8 +107,9 @@ contract ClaimVerifier is IClaimVerifier {
     claim.imageHash = imageHash;
     claim.trueCallback = trueCallback;
     claim.falseCallback = falseCallback;
+    claim.defensePayoutCallback = defensePayoutCallback;
 
-    emit NewClaim(seed, image, claimKey);
+    emit NewClaim(seed, imageHash, claimKey);
   }
 
   function falsifyClaim (
