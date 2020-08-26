@@ -56,21 +56,18 @@ class MerkleTree {
     }
 
     return this.layers.reduce((proof, layer) => {
-      const pairIdx = idx % 2 === 0 ? idx + 1 : idx - 1;
-      const pairElement = this.getPairElement(pairIdx, layer);
+      const pairElement = this.getPairElement(idx, layer);
 
       if (!pairElement) return proof;
 
       idx = Math.floor(idx / 2);
 
-      return {
-        path: [...proof.path, pairIdx % 2],
-        data: [...proof.data, bufferToHex(pairElement)],
-      };
-    }, { data: [], path: [] });
+      return [...proof, bufferToHex(pairElement)];
+    }, []);
   }
 
-  getPairElement (pairIdx, layer) {
+  getPairElement (idx, layer) {
+    const pairIdx = idx % 2 === 0 ? idx + 1 : idx - 1;
     if (pairIdx < layer.length) {
       return layer[pairIdx];
     } else {

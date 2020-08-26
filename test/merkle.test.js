@@ -1,8 +1,8 @@
 const { keccakFromString, bufferToHex } = require("ethereumjs-util");
 const ethers = require('ethers');
 const { expect } = require("chai");
-
 const { deployContract, link, MockProvider } = require("ethereum-waffle");
+
 const { MerkleTree } = require("./helpers/merkleTree");
 const MerkleProofWrapper = require("../build/MerkleProofWrapper.json");
 const Merkle = require("../build/Merkle.json");
@@ -29,18 +29,19 @@ describe("Merkle", function () {
 
       const root = merkleTree.getRoot();
 
-      const leafIndex = 3;
-      const leaf = bufferToHex(keccakFromString(elements[leafIndex]));
+      const index = 3;
+      const leaf = bufferToHex(keccakFromString(elements[index]));
       
       const proof = {
         leaf,
-        ...merkleTree.getProof(elements[leafIndex]),
+        data: merkleTree.getProof(elements[index]),
+        index,
       };
 
       expect(await merkleProof.verify(proof)).to.deep.equal([
         leaf,
         root,
-        ethers.BigNumber.from(leafIndex)
+        ethers.BigNumber.from(index)
       ]);
     });
   });
