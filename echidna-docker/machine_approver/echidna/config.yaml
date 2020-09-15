@@ -1,0 +1,3 @@
+solcLibs: ["ExampleMachine.sol:Machine"]
+testLimit: 50
+seqLen: 5
