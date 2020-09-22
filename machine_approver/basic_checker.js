@@ -8,8 +8,8 @@ if (!machinePath) {
 }
 
 function main() {
-  let file = checkFileExists();
-  let compiledOutput = checkFileCompiles(file);
+  let file = getFileContents();
+  let compiledOutput = getCompilerArtifacts(file);
   let machine = compiledOutput[machinePath].Machine;
 
   if (!machine) {
@@ -22,7 +22,7 @@ function main() {
   replaceLibPathInConfig();
 }
 
-const checkFileExists = () => {
+const getFileContents = () => {
   if (machinePath.slice(-4) !== '.sol') {
     console.log("The file extension must be .sol");
     process.exit();
@@ -41,7 +41,7 @@ const checkFileExists = () => {
   return contents;
 }
 
-const checkFileCompiles = (file) => {
+const getCompilerArtifacts = (file) => {
   // TODO: check the pragma solidity version and use solc.version that match
   let input = {
     language: "Solidity",
