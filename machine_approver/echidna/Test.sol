@@ -34,10 +34,7 @@ contract Test {
   function echidna_imageHash_main() public returns (bool) {
     (Machine.State memory state1, Machine.State memory state2, ) = rand().generate();
 
-    if (Machine.stateHash(state1) == Machine.stateHash(state2)) {
-      return Machine.imageHash(Machine.project(state1)) == Machine.imageHash(Machine.project(state2));
-    }
-    return false;
+    return Machine.imageHash(Machine.project(state1)) == Machine.imageHash(Machine.project(state2));
   }
 
   function echidna_noninterference_main() public returns (bool) {
