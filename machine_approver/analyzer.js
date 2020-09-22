@@ -47,72 +47,44 @@ const image = notPassed.filter(testedProperty => testedProperty.name === 'echidn
 const noninterference = notPassed.filter(testedProperty => testedProperty.name === 'echidna_noninterference_main');
 const terminal = notPassed.filter(testedProperty => testedProperty.name === 'echidna_terminal_main');
 
-if (isDark.length === 0) {
-  if (terminal.length != 0) {
-    switch (terminal[0].status) {
+const Errors = {
+  isDark: ["The way how the terminal state (third output) is generated is vulnerable, because the state is not terminal in the following call sequence:", "The way how the terminal state (third output) is generated is wrong. Please, take a look, on how you generate terminal state or how the 'next' function is implemented."],
+  terminal: ["The following call sequence violate the Machine property if state is terminal the next state must be the same:", "The Machine implementation doesn't satisfy the property if state is terminal the next state must be the same. Please, take a look, on how the 'next', 'isTerminal', 'stateHash' functions and 'State struct' are implemented."],
+  generateState: ["The way how first two states are generated is vulnerable, because the stateHashes doesn't match in the following call sequence:", "The way how first two states are generated is wrong, because the stateHashes doesn't match. Please, take a look, on how you generate states or how stateHash function is implemented, or State struct."],
+  image: ["The following call sequence violate the Machine property if two states are the same the images must be the same:", "The Machine implementation doesn't satisfy the property if two states are the same the images must be the same. Please, take a look, on how the 'imageHash', 'project', 'stateHash' functions and 'State struct, Image struct' are implemented."],
+  noninterference: ["The following call sequence violate the Machine property noninterference:", "The Machine implementation doesn't satisfy the property noninterference. Please, take a look, on how 'stateHash', 'next' functions are implemented, or State struct."]
+}
+
+function analyze(firstProperty, secondProperty, firstPropertyName, secondPropertyName) {
+  if (firstProperty.length === 0) {
+    if (secondProperty.length != 0) {
+      switch (secondProperty[0].status) {
+        case 'shrinking':
+          console.log(Errors[secondPropertyName][0]);
+          for (let i = 0; i < secondProperty[0].transactions.length; i++) {
+            console.log("Function: " + secondProperty[0].transactions[i].function + " with arguments: " + secondProperty[0].transactions[i].arguments);
+          }
+          break;
+        case 'solved':
+          console.log(Errors[secondPropertyName][1]);
+          break;
+      }
+    }
+  } else {
+    switch (firstProperty[0].status) {
       case 'shrinking':
-        console.log("The following call sequence violate the Machine property if state is terminal the next state must be the same:");
-        for (let i = 0; i < terminal[0].transactions.length; i++) {
-          console.log("Function: " + terminal[0].transactions[i].function + " with arguments: " + terminal[0].transactions[i].arguments);
+        console.log(Errors[firstPropertyName][0]);
+        for (let i = 0; i < firstProperty[0].transactions.length; i++) {
+          console.log("Function: " + firstProperty[0].transactions[i].function + " with arguments: " + firstProperty[0].transactions[i].arguments);
         }
         break;
       case 'solved':
-        console.log("The Machine implementation doesn't satisfy the property if state is terminal the next state must be the same. Please, take a look, on how the 'next', 'isTerminal', 'stateHash' functions and 'State struct' are implemented.");
+        console.log(Errors[firstPropertyName][1]);
         break;
     }
   }
-} else {
-  switch (isDark[0].status) {
-    case 'shrinking':
-      console.log("The way how the terminal state (third output) is generated is vulnerable, because the state is not terminal in the following call sequence:");
-      for (let i = 0; i < isDark[0].transactions.length; i++) {
-        console.log("Function: " + isDark[0].transactions[i].function + " with arguments: " + isDark[0].transactions[i].arguments);
-      }
-      break;
-    case 'solved':
-      console.log("The way how the terminal state (third output) is generated is wrong. Please, take a look, on how you generate terminal state or how the 'next' function is implemented.");
-      break;
-  }
 }
 
-if (generateState.length === 0) {
-  if (image.length != 0) {
-    switch (image[0].status) {
-      case 'shrinking':
-        console.log("The following call sequence violate the Machine property if two states are the same the images must be the same:");
-        for (let i = 0; i < image[0].transactions.length; i++) {
-          console.log("Function: " + image[0].transactions[i].function + " with arguments: " + image[0].transactions[i].arguments);
-        }
-        break;
-      case 'solved':
-        console.log("The Machine implementation doesn't satisfy the property if two states are the same the images must be the same. Please, take a look, on how the 'imageHash', 'project', 'stateHash' functions and 'State struct, Image struct' are implemented.");
-        break;
-    }
-  }
-} else {
-  switch (generateState[0].status) {
-    case 'shrinking':
-      console.log("The way how first two states are generated is vulnerable, because the stateHashes doesn't match in the following call sequence:");
-      for (let i = 0; i < generateState[0].transactions.length; i++) {
-        console.log("Function: " + generateState[0].transactions[i].function + " with arguments: " + generateState[0].transactions[i].arguments);
-      }
-      break;
-    case 'solved':
-      console.log("The way how first two states are generated is wrong, because the stateHashes doesn't match. Please, take a look, on how you generate states or how stateHash function is implemented, or State struct.");
-      break;
-  }
-}
-
-if (noninterference.length != 0) {
-  switch (noninterference[0].status) {
-    case 'shrinking':
-      console.log("The following call sequence violate the Machine property noninterference:");
-      for (let i = 0; i < noninterference[0].transactions.length; i++) {
-        console.log("Function: " + noninterference[0].transactions[i].function + " with arguments: " + noninterference[0].transactions[i].arguments);
-      }
-      break;
-    case 'solved':
-      console.log("The Machine implementation doesn't satisfy the property noninterference. Please, take a look, on how 'stateHash', 'next' functions are implemented, or State struct.");
-      break;
-  }
-}
+analyze(isDark, terminal, "isDark", "terminal");
+analyze(generateState, image, "generateState", "image");
+analyze(generateState, noninterference, "generateState", "noninterference");
