@@ -296,7 +296,7 @@ contract ClaimFalsifier is IClaimFalsifier {
   {
     bytes32 defendantRoot = disputes[prosecutorRoot].defendantRoot;
     IClaimVerifier.Claim memory claim = claimVerifier.getClaim(defendantRoot);
-    function(bytes32) external payable callback = claim.defensePayoutCallback;
+    function(bytes32) external payable callback = claimVerifier.getClient().defensePayoutCallback;
 
     delete disputes[prosecutorRoot];
     
