@@ -5,7 +5,7 @@ import "./ClaimVerifier.sol";
 import "./Merkle.sol";
 
 interface IClaimFalsifier {
-  
+
   enum DisputeState {
     DoesNotExist,
     Opened,
@@ -77,7 +77,7 @@ interface IClaimFalsifier {
   ) external;
 
   function timeout (
-    bytes32 disputeKey
+    bytes32 prosecutorRoot
   ) external;
 }
 
@@ -88,13 +88,20 @@ contract ClaimFalsifier is IClaimFalsifier {
   uint public STAKE_SIZE;
   uint public MAX_TREE_DEPTH;
 
+  constructor(uint stake_size, uint max_tree_depth, address client) public
+  {
+    STAKE_SIZE = stake_size;
+    MAX_TREE_DEPTH = max_tree_depth;
+    claimVerifier = new ClaimVerifier(address(this), client);
+  }
+
   function getDispute (
     bytes32 prosecutorRoot
   ) external view override returns (Dispute memory)
   {
     return disputes[prosecutorRoot];
   }
-    
+
   function newDispute (
     bytes32 defendantRoot,
     Merkle.TreeNode calldata prosecutorNode
@@ -114,7 +121,7 @@ contract ClaimFalsifier is IClaimFalsifier {
     dispute.defendantRoot = defendantRoot;
     dispute.state = DisputeState.Opened;
     dispute.prosecutor = msg.sender;
-    dispute.lastActionTimestamp = now;
+    dispute.lastActionTimestamp = block.timestamp;
     dispute.prosecutorNode = _node;
 
     emit NewDispute(defendantRoot, prosecutorRoot);
@@ -148,7 +155,7 @@ contract ClaimFalsifier is IClaimFalsifier {
     Merkle.TreeNode memory _node = defendantNode;
 
     dispute.defendantNode = _node;
-    dispute.lastActionTimestamp = now;
+    dispute.lastActionTimestamp = block.timestamp;
     dispute.state = DisputeState.ProsecutorTurn;
     dispute.numberOfSteps = rightProofIndex;
     dispute.goRight = _goRight(dispute.prosecutorNode, dispute.defendantNode);
@@ -164,7 +171,7 @@ contract ClaimFalsifier is IClaimFalsifier {
   ) override external
   {
     Dispute storage dispute = disputes[prosecutorRoot];
-    
+
     require(dispute.state == DisputeState.ProsecutorTurn, "Dispute state is not correct for this action.");
     require(dispute.goRight ? Merkle.hash(node) == dispute.prosecutorNode.right : Merkle.hash(node) == dispute.prosecutorNode.left, "Brought node from the wrong side.");
 
@@ -172,7 +179,7 @@ contract ClaimFalsifier is IClaimFalsifier {
     Merkle.TreeNode memory _node = node;
 
     dispute.prosecutorNode = _node;
-    dispute.lastActionTimestamp = now;
+    dispute.lastActionTimestamp = block.timestamp;
     dispute.state = DisputeState.DefendantTurn;
 
     // emit something
@@ -186,13 +193,13 @@ contract ClaimFalsifier is IClaimFalsifier {
     Dispute storage dispute = disputes[prosecutorRoot];
 
     require(dispute.state == DisputeState.DefendantTurn, "Dispute state is not correct for this action.");
-    require(dispute.goRight ? Merkle.hash(node) == dispute.defendantNode.right : Merkle.hash(node) == dispute.prosecutorNode.left, "Brought node from the wrong side.");
+    require(dispute.goRight ? Merkle.hash(node) == dispute.defendantNode.right : Merkle.hash(node) == dispute.defendantNode.left, "Brought node from the wrong side.");
 
     // Workaround
     Merkle.TreeNode memory _node = node;
 
     dispute.defendantNode = _node;
-    dispute.lastActionTimestamp = now;
+    dispute.lastActionTimestamp = block.timestamp;
     dispute.goRight = _goRight(dispute.prosecutorNode, dispute.defendantNode);
     dispute.disagreementPoint = _updateDisagreementPoint(dispute.disagreementPoint, dispute.goRight);
     dispute.depth += 1;
@@ -221,7 +228,7 @@ contract ClaimFalsifier is IClaimFalsifier {
     Dispute storage dispute = disputes[prosecutorRoot];
 
     (bytes32 leaf, bytes32 root, uint index) = Merkle.eval(proof);
-    
+
     require(dispute.state == DisputeState.Bottom, "Dispute state is not correct for this action.");
     require(leaf == Machine.stateHash(state), "The submitted proof is not of the revealed state");
     require(root == dispute.defendantRoot, "The submitted proof root does not match defendant root");
@@ -248,7 +255,7 @@ contract ClaimFalsifier is IClaimFalsifier {
       _prosecutorWins(prosecutorRoot);
     }
   }
-    
+
   function _claimExists (
     bytes32 defendantRoot
   ) internal view returns (bool)
@@ -262,7 +269,7 @@ contract ClaimFalsifier is IClaimFalsifier {
   ) internal view returns (bool)
   {
     IClaimVerifier.Claim memory claim = claimVerifier.getClaim(defendantRoot);
-    return now < claim.claimTime + (claim.timeout / 2);
+    return block.timestamp < claim.claimTime + (claim.timeout / 2);
   }
 
   function _goRight (
@@ -299,8 +306,8 @@ contract ClaimFalsifier is IClaimFalsifier {
     function(bytes32) external payable callback = claimVerifier.getClient().defensePayoutCallback;
 
     delete disputes[prosecutorRoot];
-    
-    callback.value(STAKE_SIZE)(defendantRoot);
+
+    callback{value: STAKE_SIZE}(defendantRoot);
   }
 
   function _prosecutorWins (
@@ -329,5 +336,5 @@ contract ClaimFalsifier is IClaimFalsifier {
     DisputeState state = disputes[disputeKey].state;
     return state == DisputeState.ProsecutorTurn;
   }
-    
+
 }

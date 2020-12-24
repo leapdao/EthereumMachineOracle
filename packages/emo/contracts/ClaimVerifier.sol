@@ -48,7 +48,7 @@ interface IClaimVerifier {
     uint timeout
   ) external payable;
 
-  // only ClaimVerifier
+  // only ClaimFalsifier
   function falsifyClaim (
     bytes32 claimKey,
     address falsifier
@@ -95,11 +95,11 @@ contract ClaimVerifier is IClaimVerifier {
     require(!_claimExists(claimKey), "Claim already exists.");
     require(msg.value > 0, "Stake must be greater than 0.");
     require(msg.sender == address(CLIENT), "Only client can make claims.");
-    require(timeout > 0 && (2 * timeout) + now > (2 * timeout), "Timeout must be greater then zero and be in overflow bounds.");
+    require(timeout > 0 && timeout + block.timestamp > timeout, "Timeout must be greater then zero and be in overflow bounds.");
 
     bytes32 initialStateHash = Machine.stateHash(Machine.create(seed));
-    
-    claim.claimTime = now;
+
+    claim.claimTime = block.timestamp;
     claim.timeout = timeout;
     claim.stake = msg.value;
     claim.initialStateHash = initialStateHash;
@@ -126,7 +126,7 @@ contract ClaimVerifier is IClaimVerifier {
     payable(falsifier).call{value: stake}("");
 
     emit FalseClaim(claimKey);
-    
+
     try callback(claimKey) {
     } catch {
       emit CallbackFailed(claimKey);
@@ -140,7 +140,7 @@ contract ClaimVerifier is IClaimVerifier {
     Claim storage claim = claims[claimKey];
 
     require(_claimExists(claimKey), "Claim must exist.");
-    require(now >= claim.claimTime + claim.timeout, "Too early to resolve.");
+    require(block.timestamp >= claim.claimTime + claim.timeout, "Too early to resolve.");
 
     uint stake = claim.stake;
     function(bytes32) external callback = CLIENT.trueCallback;
@@ -163,5 +163,5 @@ contract ClaimVerifier is IClaimVerifier {
   {
     return claims[claimKey].claimTime > 0;
   }
-  
+
 }
