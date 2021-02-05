@@ -87,7 +87,7 @@ contract ClaimFalsifier is IClaimFalsifier {
   mapping (bytes32 => Dispute) public disputes;
   uint public STAKE_SIZE;
   uint public MAX_TREE_DEPTH;
-
+  // add timeout for steps
   constructor(uint stake_size, uint max_tree_depth, address client) public
   {
     STAKE_SIZE = stake_size;
@@ -280,13 +280,12 @@ contract ClaimFalsifier is IClaimFalsifier {
     return prosecutorNode.left == defendantNode.left;
   }
 
-  // TODO
   function _updateDisagreementPoint (
     uint disagreementPoint,
     bool goRight
   ) internal pure returns (uint)
   {
-    return 0;
+    return disagreementPoint << 1 | (goRight ? 1 : 0);
   }
 
   function _reachedBottom (
@@ -321,19 +320,23 @@ contract ClaimFalsifier is IClaimFalsifier {
     prosecutor.call.value(STAKE_SIZE)("");
   }
 
-  // TODO
   function _canTimeout (
-    bytes32 disputeKey
+    bytes32 prosecutorRoot
   ) internal view returns (bool)
   {
-    return false;
+    Dispute storage dispute = disputes[prosecutorRoot];
+    bytes32 defendantRoot = disputes[prosecutorRoot].defendantRoot;
+    IClaimVerifier.Claim memory claim = claimVerifier.getClaim(defendantRoot);
+    return claim.claimTime + claim.timeout <= block.timestamp;
+    // TODO 3 timeouts
+    // claimTimeout, noLongerstartdispute, stepTimeout <- start from this
   }
 
   function _defendantWinsOnTimeout (
-    bytes32 disputeKey
+    bytes32 prosecutorRoot
   ) internal view returns (bool)
   {
-    DisputeState state = disputes[disputeKey].state;
+    DisputeState state = disputes[prosecutorRoot].state;
     return state == DisputeState.ProsecutorTurn;
   }
 

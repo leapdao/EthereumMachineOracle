@@ -6,7 +6,7 @@ const Client = artifacts.require('Client');
 
 const DEFAULT_TIMEOUT = 60;
 const DEFAULT_STAKE_SIZE = '0x2c68af0bb140000';
-const DEFAULT_MAX_TREE_DEPTH = 16;
+const DEFAULT_MAX_TREE_DEPTH = 3;
 
 module.exports = (deployer, network, accounts) => {
   const default_timeout = process.env.TIMEOUT || DEFAULT_TIMEOUT;

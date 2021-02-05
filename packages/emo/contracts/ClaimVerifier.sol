@@ -115,8 +115,8 @@ contract ClaimVerifier is IClaimVerifier {
   {
     Claim storage claim = claims[claimKey];
 
-    require(_claimExists(claimKey), "Claim does not exsist.");
-    require(msg.sender == CLAIM_FALSIFIER, "Only claim falsifier can falsify answers");
+    require(_claimExists(claimKey), "Claim does not exist.");
+    require(msg.sender == CLAIM_FALSIFIER, "Only claim falsifier can falsify claim.");
 
     uint stake = claim.stake;
     function(bytes32) external callback = CLIENT.falseCallback;
