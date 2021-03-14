@@ -23,7 +23,7 @@ const isEthersArray = (val) => {
   return nums.length * 2 === keys.length && keys.length > 0;
 }
 
-const arraifyAsEthers = (obj) => {
+const arraifyAsEthers = (obj, flag = true) => {
   const arr = [];
   let i = 0;
   Object.keys(obj).forEach(key => {
@@ -32,18 +32,23 @@ const arraifyAsEthers = (obj) => {
       arr[key] = ret;
       i++;
   });
-  turnAllToString(arr);
+  turnAllToString(arr, flag);
   return arr;
 }
 
-const turnAllToString = (obj) => {
+
+const turnAllToString = (obj, flag) => {
   Object.keys(obj).forEach(key => {
     const ele = obj[key];
     if (typeof ele === 'object') {
       turnAllToString(ele);
     } else if (parseInt(ele) === parseInt(ele)) {
-      if (ele.toString().length > 41) {
-        obj[key] = ele.toString();
+      if (flag) {
+        if (ele.toString().length === 42 || ele.toString().length === 66) {
+          obj[key] = ele.toString();
+        } else {
+          obj[key] = BigInt(ele).toString();
+        }
       } else {
         obj[key] = BigInt(ele).toString();
       }
